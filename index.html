@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniStore Enterprise Management System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f5ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom subtle glassmorphism and animations */
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hover-pop {
+      transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hover-pop:hover {
+      transform: translateY(-2px);
+    }
+    .hover-pop:active {
+      transform: translateY(0);
+    }
+    /* Hide scrollbars for clean UI */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased select-none overflow-hidden">
+
+  <!-- SOOTHING SOUND SYNTHESIZER (Web Audio API) -->
+  <script>
+    let audioCtx = null;
+    function playSoothingClick(freq = 280, duration = 0.035) {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        // Sine oscillator with rapid pitch glide for a soothing 'pop' click
+        osc.type = 'sine';
+        const now = audioCtx.currentTime;
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + duration);
+        
+        // Warm volume curve
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start(now);
+        osc.stop(now + duration);
+      } catch(e) {
+        console.warn("Audio Context setup pending user interaction.");
+      }
+    }
+
+    // Attach click sound listener globally to all buttons, tabs, links, and inputs
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('button, a, input, select, tab, .interactive');
+      if (target) {
+        playSoothingClick();
+      }
+    });
+  </script>
+
+  <!-- APP STATE WRAPPER -->
+  <div id="app" class="h-full flex flex-col">
+
+    <!-- ========================================== -->
+    <!-- SECTION 1: LOGIN PAGE (3 ACCOUNT TYPES) -->
+    <!-- ========================================== -->
+    <div id="view-login" class="h-full flex items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950">
+      <div class="glass-panel w-full max-w-md p-8 rounded-3xl shadow-2xl space-y-6 border border-slate-800">
+        
+        <div class="text-center space-y-2">
+          <div class="inline-flex p-3 rounded-2xl bg-indigo-500/10 text-indigo-400 mb-2 border border-indigo-500/20">
+            <i data-lucide="shield-check" class="w-8 h-8"></i>
+          </div>
+          <h1 class="text-2xl font-bold tracking-tight text-white">OmniStore Portal</h1>
+          <p class="text-xs text-slate-400">Select an account role below to enter system modules</p>
+        </div>
+
+        <!-- 3 Account Types Selector -->
+        <div class="grid grid-cols-3 gap-2 p-1 bg-slate-950/60 rounded-2xl border border-slate-800/80" id="role-selector">
+          <button onclick="selectRole('Admin')" id="role-btn-Admin" class="role-btn py-2.5 px-3 rounded-xl text-xs font-semibold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/30">
+            Admin
+          </button>
+          <button onclick="selectRole('Manager')" id="role-btn-Manager" class="role-btn py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-all">
+            Manager
+          </button>
+          <button onclick="selectRole('Cashier')" id="role-btn-Cashier" class="role-btn py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-all">
+            Cashier
+          </button>
+        </div>
+
+        <!-- Login Form -->
+        <form onsubmit="handleLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Username / Email</label>
+            <div class="relative">
+              <i data-lucide="user" class="w-4 h-4 absolute left-3 top-3 text-slate-500"></i>
+              <input type="text" id="login-email" required value="c@gmail.com" class="w-full bg-slate-950/80 border border-slate-800 rounded-xl py-2.5 pl-10 pr-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Password</label>
+            <div class="relative">
+              <i data-lucide="key-round" class="w-4 h-4 absolute left-3 top-3 text-slate-500"></i>
+              <input type="password" id="login-password" required value="••••••••••••" class="w-full bg-slate-950/80 border border-slate-800 rounded-xl py-2.5 pl-10 pr-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span class="inline-flex items-center gap-1.5 text-emerald-400">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Supabase Connected
+            </span>
+            <a href="#" class="hover:text-indigo-400 transition-colors">Forgot key?</a>
+          </div>
+
+          <button type="submit" class="hover-pop w-full py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-medium rounded-xl text-xs shadow-lg shadow-indigo-600/30 hover:brightness-110 active:scale-95 transition-all">
+            Authenticate & Open System
+          </button>
+        </form>
+
+        <div class="pt-2 border-t border-slate-800/60 text-center">
+          <button onclick="toggleSqlModal()" class="text-[11px] text-slate-500 hover:text-slate-300 transition-colors">
+            View Supabase Database Schema SQL
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SECTION 2: MAIN DASHBOARD & MODULE ROUTING -->
+    <!-- ========================================== -->
+    <div id="view-dashboard" class="hidden h-full flex flex-col md:flex-row bg-slate-950">
+      
+      <!-- SIDEBAR -->
+      <aside class="w-full md:w-64 bg-slate-900/80 border-r border-slate-800 flex flex-col">
+        <!-- Logo Header -->
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/20">
+              <i data-lucide="layers" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="font-bold text-sm text-white tracking-wide">OmniStore</h2>
+              <p class="text-[10px] text-slate-400">Management v2.4</p>
+            </div>
+          </div>
+          <span id="active-role-badge" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+            Admin
+          </span>
+        </div>
+
+        <!-- Navigation Menu Links -->
+        <nav class="p-3 space-y-1 flex-1 overflow-y-auto no-scrollbar">
+          <div class="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Modules</div>
+          
+          <button onclick="switchTab('account')" id="nav-account" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition-all">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            Account Management
+          </button>
+
+          <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition-all">
+            <i data-lucide="boxes" class="w-4 h-4"></i>
+            Inventory Management
+          </button>
+
+          <button onclick="switchTab('supplier')" id="nav-supplier" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition-all">
+            <i data-lucide="truck" class="w-4 h-4"></i>
+            Supplier Management
+          </button>
+
+          <button onclick="switchTab('pos')" id="nav-pos" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/60 hover:text-white transition-all">
+            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+            Transaction / Sales / POS
+          </button>
+        </nav>
+
+        <!-- User Profile & Logout -->
+        <div class="p-3 border-t border-slate-800 bg-slate-900/40">
+          <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/50 transition-colors">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-xs text-white" id="user-avatar">
+                CT
+              </div>
+              <div class="overflow-hidden">
+                <p id="user-display-name" class="text-xs font-medium text-white truncate">cyles todd g matuguina</p>
+                <p id="user-display-role" class="text-[10px] text-slate-400 truncate">Admin Account</p>
+              </div>
+            </div>
+            <button onclick="logout()" title="Logout" class="p-1.5 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-rose-400 transition-colors">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT VIEWPORT -->
+      <main class="flex-1 flex flex-col overflow-hidden bg-slate-950">
+        
+        <!-- TOP NAVBAR HEADER -->
+        <header class="h-16 border-b border-slate-800 bg-slate-900/40 px-6 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <h2 id="current-module-title" class="text-base font-bold text-white tracking-wide">
+              Account Management
+            </h2>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-400">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>Supabase Rest API: Connected</span>
+            </div>
+            <button onclick="toggleSqlModal()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-all">
+              <i data-lucide="database" class="w-3.5 h-3.5 inline mr-1"></i> Schema
+            </button>
+          </div>
+        </header>
+
+        <!-- DYNAMIC MODULE PANELS -->
+        <div class="flex-1 overflow-y-auto p-6 no-scrollbar">
+
+          <!-- MODULE 1: ACCOUNT MANAGEMENT -->
+          <div id="module-account" class="module-content space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <p class="text-xs text-slate-400">Manage registered system accounts, security roles, and user statuses.</p>
+              </div>
+              <button onclick="openAddAccountModal()" class="hover-pop px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition-all">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> Create Account
+              </button>
+            </div>
+
+            <div class="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="bg-slate-900/80 text-slate-400 border-b border-slate-800 uppercase text-[10px] tracking-wider">
+                    <tr>
+                      <th class="p-4">User</th>
+                      <th class="p-4">Role</th>
+                      <th class="p-4">Status</th>
+                      <th class="p-4">Created At</th>
+                      <th class="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="account-table-body" class="divide-y divide-slate-800/60">
+                    <!-- Dynamic Rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+
+          <!-- MODULE 2: INVENTORY MANAGEMENT -->
+          <div id="module-inventory" class="module-content space-y-6 hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div class="relative w-full sm:w-72">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-500"></i>
+                <input type="text" id="inventory-search" oninput="renderInventory()" placeholder="Search items or SKU..." class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+              </div>
+              <button onclick="openAddInventoryModal()" class="hover-pop px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition-all">
+                <i data-lucide="package-plus" class="w-4 h-4"></i> Add New Product
+              </button>
+            </div>
+
+            <div class="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="bg-slate-900/80 text-slate-400 border-b border-slate-800 uppercase text-[10px] tracking-wider">
+                    <tr>
+                      <th class="p-4">SKU / Item Name</th>
+                      <th class="p-4">Category</th>
+                      <th class="p-4">Price</th>
+                      <th class="p-4">Stock Level</th>
+                      <th class="p-4">Status</th>
+                      <th class="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inventory-table-body" class="divide-y divide-slate-800/60">
+                    <!-- Dynamic Rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+
+          <!-- MODULE 3: SUPPLIER MANAGEMENT -->
+          <div id="module-supplier" class="module-content space-y-6 hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <p class="text-xs text-slate-400">Maintain vendor contacts and procurement partner networks.</p>
+              <button onclick="openAddSupplierModal()" class="hover-pop px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition-all">
+                <i data-lucide="building-2" class="w-4 h-4"></i> Add Supplier
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="supplier-card-grid">
+              <!-- Dynamic Supplier Cards -->
+            </div>
+          </div>
+
+
+          <!-- MODULE 4: TRANSACTION / SALES / POS -->
+          <div id="module-pos" class="module-content space-y-6 hidden">
+            
+            <!-- POS Tabs Toggle: POS Terminal vs Sales History -->
+            <div class="flex border-b border-slate-800 gap-4 text-xs font-semibold">
+              <button onclick="togglePosSubView('terminal')" id="tab-pos-terminal" class="pb-2 text-indigo-400 border-b-2 border-indigo-500">
+                POS Counter Terminal
+              </button>
+              <button onclick="togglePosSubView('history')" id="tab-pos-history" class="pb-2 text-slate-400 hover:text-white">
+                Transaction History Log
+              </button>
+            </div>
+
+            <!-- POS SUBVIEW 1: TERMINAL -->
+            <div id="pos-terminal-view" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              <!-- Product Selector Grid (2 cols on LG) -->
+              <div class="lg:col-span-2 space-y-4">
+                <div class="relative">
+                  <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-500"></i>
+                  <input type="text" id="pos-search" oninput="renderPosProducts()" placeholder="Quick scan product or type SKU..." class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="pos-product-grid">
+                  <!-- Dynamic POS Items -->
+                </div>
+              </div>
+
+              <!-- Cart & Checkout Sidebar (1 col) -->
+              <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4">
+                <div>
+                  <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                      <i data-lucide="shopping-bag" class="w-4 h-4 text-indigo-400"></i> Current Order
+                    </h3>
+                    <button onclick="clearCart()" class="text-[11px] text-rose-400 hover:underline">Clear Cart</button>
+                  </div>
+
+                  <!-- Cart Items List -->
+                  <div id="cart-items-container" class="py-3 space-y-3 max-h-64 overflow-y-auto no-scrollbar">
+                    <p class="text-xs text-slate-500 text-center py-8">Cart is empty. Click items to add.</p>
+                  </div>
+                </div>
+
+                <!-- Summary Breakdown -->
+                <div class="space-y-3 pt-3 border-t border-slate-800">
+                  <div class="flex justify-between text-xs text-slate-400">
+                    <span>Subtotal</span>
+                    <span id="cart-subtotal">$0.00</span>
+                  </div>
+                  <div class="flex justify-between text-xs text-slate-400">
+                    <span>Tax (12%)</span>
+                    <span id="cart-tax">$0.00</span>
+                  </div>
+                  <div class="flex justify-between text-sm font-bold text-white pt-1 border-t border-slate-800/80">
+                    <span>Total Payable</span>
+                    <span id="cart-total" class="text-indigo-400">$0.00</span>
+                  </div>
+
+                  <button onclick="checkoutPOS()" class="hover-pop w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Complete Transaction
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- POS SUBVIEW 2: HISTORY LOG -->
+            <div id="pos-history-view" class="hidden glass-panel rounded-2xl border border-slate-800 overflow-hidden">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-900/80 text-slate-400 border-b border-slate-800 uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th class="p-4">Ref #</th>
+                    <th class="p-4">Items Purchased</th>
+                    <th class="p-4">Date & Time</th>
+                    <th class="p-4">Total Qty</th>
+                    <th class="p-4">Total Amount</th>
+                    <th class="p-4">Processed By</th>
+                  </tr>
+                </thead>
+                <tbody id="pos-history-table-body" class="divide-y divide-slate-800/60">
+                  <!-- Dynamic Logs -->
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+        </div>
+      </main>
+
+    </div>
+
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- MODALS -->
+  <!-- ========================================== -->
+  
+  <!-- Add User Account Modal -->
+  <div id="modal-account" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-slate-800 space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="font-bold text-sm text-white">Create New User Account</h3>
+        <button onclick="closeModal('modal-account')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <form onsubmit="submitNewAccount(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Full Name</label>
+          <input type="text" id="acc-name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Email Address</label>
+          <input type="email" id="acc-email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Password</label>
+          <div class="relative">
+            <input type="password" id="acc-password" required minlength="6" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500">
+            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-3 text-slate-500 hover:text-slate-300 transition-colors focus:outline-none">
+              <i data-lucide="eye" id="pwd-eye-icon" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Account Role</label>
+          <select id="acc-role" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+            <option value="Admin">Admin</option>
+            <option value="Manager">Manager</option>
+            <option value="Cashier">Cashier</option>
+          </select>
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-account')" class="px-4 py-2 bg-slate-800 rounded-xl text-slate-300">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold">Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Inventory Modal -->
+  <div id="modal-inventory" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-slate-800 space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="font-bold text-sm text-white">Add Inventory Item</h3>
+        <button onclick="closeModal('modal-inventory')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <form onsubmit="submitNewInventory(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Item Name</label>
+          <input type="text" id="inv-name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">SKU Code</label>
+          <input type="text" id="inv-sku" required placeholder="SKU-100X" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Unit Price ($)</label>
+            <input type="number" step="0.01" id="inv-price" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Initial Stock</label>
+            <input type="number" id="inv-stock" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Category</label>
+          <input type="text" id="inv-category" placeholder="Electronics, Apparel, etc." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-inventory')" class="px-4 py-2 bg-slate-800 rounded-xl text-slate-300">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Supplier Modal -->
+  <div id="modal-supplier" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-slate-800 space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="font-bold text-sm text-white">Add Supplier Partner</h3>
+        <button onclick="closeModal('modal-supplier')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <form onsubmit="submitNewSupplier(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Supplier Company Name</label>
+          <input type="text" id="sup-name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Contact Person</label>
+          <input type="text" id="sup-contact" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Phone</label>
+            <input type="text" id="sup-phone" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Supply Category</label>
+            <input type="text" id="sup-category" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+          </div>
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-supplier')" class="px-4 py-2 bg-slate-800 rounded-xl text-slate-300">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold">Save Supplier</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Schema SQL Modal -->
+  <div id="modal-sql" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-2xl p-6 rounded-2xl border border-slate-800 space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="font-bold text-sm text-white flex items-center gap-2">
+          <i data-lucide="database" class="w-4 h-4 text-indigo-400"></i> Supabase Database Setup SQL
+        </h3>
+        <button onclick="closeModal('modal-sql')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <p class="text-xs text-slate-400">Run this code in your Supabase SQL Editor to construct the backend tables:</p>
+      <pre class="bg-slate-950 p-4 rounded-xl text-[11px] font-mono text-emerald-400 overflow-x-auto border border-slate-800/80 max-h-80 leading-relaxed">
+-- Account Management Table
+create table if not exists accounts (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  email text unique not null,
+  role text check (role in ('Admin', 'Manager', 'Cashier')),
+  status text default 'Active',
+  created_at timestamp default now()
+);
+
+-- Inventory Management Table
+create table if not exists inventory (
+  id uuid default gen_random_uuid() primary key,
+  sku text unique not null,
+  name text not null,
+  category text,
+  price numeric(10,2) not null,
+  stock int default 0,
+  created_at timestamp default now()
+);
+
+-- Supplier Management Table
+create table if not exists suppliers (
+  id uuid default gen_random_uuid() primary key,
+  company_name text not null,
+  contact_person text,
+  phone text,
+  category text,
+  created_at timestamp default now()
+);
+
+-- POS Sales Transactions Table
+create table if not exists transactions (
+  id uuid default gen_random_uuid() primary key,
+  ref_number text not null,
+  total_amount numeric(10,2) not null,
+  items_count int not null,
+  processed_by text not null,
+  created_at timestamp default now()
+);
+      </pre>
+      <div class="flex justify-end">
+        <button onclick="closeModal('modal-sql')" class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
+
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT LOGIC & SUPABASE CLIENT -->
+  <!-- ========================================== -->
+  <script>
+    // 1. SUPABASE CLIENT INITIALIZATION
+    const SUPABASE_URL = "https://conupqshpvnxzvyxumyb.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvbnVwcXNocHZueHp2eXh1bXliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMzIwODksImV4cCI6MjEwNzcwODA4OX0.z0MEDpcbZQRVCcR6TF6E3KjQaR7-v0v9uv8f2hIYrmI";
+    
+    let supabaseClient = null;
+    try {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch(e) {
+      console.warn("Supabase init fallback active");
+    }
+
+    // 2. DEMO / FALLBACK DATA STATE
+    let currentRole = 'Admin';
+    let activeTab = 'account';
+
+    let accountsState = [
+      { id: '1', name: 'cyles todd g matuguina', email: 'c@gmail.com', role: 'Admin', status: 'Active', created_at: '2026-10-15' },
+      { id: '2', name: 'Von Pierre Pilapil', email: 'von@omnistore.io', role: 'Admin', status: 'Active', created_at: '2026-10-15' },
+      { id: '3', name: 'Maria Santos', email: 'maria@omnistore.io', role: 'Cashier', status: 'Active', created_at: '2026-10-16' }
+    ];
+
+    let inventoryState = [
+      { id: '1', sku: 'SKU-191X', name: 'MOUSE', category: 'Electronics', price: 39.00, stock: 90 },
+      { id: '2', sku: 'SKU-LOGI-M', name: 'Wireless Ergonomic Mouse', category: 'Electronics', price: 49.99, stock: 42 },
+      { id: '3', sku: 'SKU-MECH-KB', name: 'RGB Mechanical Keyboard', category: 'Electronics', price: 119.50, stock: 18 },
+      { id: '4', sku: 'SKU-MON-4K', name: '27-inch 4K Monitor', category: 'Hardware', price: 349.00, stock: 8 },
+      { id: '5', sku: 'SKU-USBC-HUB', name: 'Multi-port USB-C Hub', category: 'Accessories', price: 29.99, stock: 65 }
+    ];
+
+    let supplierState = [
+      { id: '1', company_name: 'TechSupply Global Inc.', contact_person: 'David Chen', phone: '+1 800-555-0199', category: 'Electronics' },
+      { id: '2', company_name: 'Apex Components Ltd.', contact_person: 'Sarah Jenkins', phone: '+1 800-555-0144', category: 'Hardware' }
+    ];
+
+    let posCart = [];
+    let transactionsState = [
+      { id: '1', ref_number: 'TRX-9481', items_summary: 'MOUSE (x2)', total_amount: 87.36, items_count: 2, processed_by: 'cyles todd g matuguina', created_at: new Date().toISOString() }
+    ];
+
+    // 3. ROLE & AUTH HANDLING
+    function selectRole(role) {
+      currentRole = role;
+      
+      document.querySelectorAll('.role-btn').forEach(btn => {
+        btn.className = "role-btn py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-all";
+      });
+      const activeBtn = document.getElementById(`role-btn-${role}`);
+      if (activeBtn) {
+        activeBtn.className = "role-btn py-2.5 px-3 rounded-xl text-xs font-semibold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/30";
+      }
+
+      const emailInput = document.getElementById('login-email');
+      if (emailInput) {
+        emailInput.value = role === 'Admin' ? 'c@gmail.com' : `${role.toLowerCase()}@omnistore.io`;
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      
+      const inputEmail = document.getElementById('login-email').value.trim();
+      
+      if (supabaseClient) {
+        await fetchSupabaseData();
+      }
+
+      const matchedUser = accountsState.find(a => 
+        a.email.toLowerCase() === inputEmail.toLowerCase() || 
+        a.name.toLowerCase() === inputEmail.toLowerCase()
+      );
+
+      const displayName = matchedUser ? matchedUser.name : (inputEmail.split('@')[0] || 'User');
+      const userRole = matchedUser ? matchedUser.role : currentRole;
+      
+      const initials = displayName
+        .split(' ')
+        .filter(Boolean)
+        .map(n => n[0].toUpperCase())
+        .slice(0, 2)
+        .join('') || 'US';
+
+      document.getElementById('user-display-name').innerText = displayName;
+      document.getElementById('user-avatar').innerText = initials;
+      document.getElementById('user-display-role').innerText = userRole + " Account";
+      document.getElementById('active-role-badge').innerText = userRole;
+
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-dashboard').classList.remove('hidden');
+
+      currentRole = userRole;
+      applyRolePermissions();
+      switchTab(currentRole === 'Cashier' ? 'pos' : 'account');
+      
+      lucide.createIcons();
+    }
+
+    function logout() {
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-login').classList.remove('hidden');
+    }
+
+    function applyRolePermissions() {
+      const navAcc = document.getElementById('nav-account');
+      if (currentRole === 'Cashier') {
+        navAcc.style.display = 'none';
+      } else {
+        navAcc.style.display = 'flex';
+      }
+    }
+
+    // 4. TAB NAVIGATION
+    function switchTab(tab) {
+      activeTab = tab;
+      
+      document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg');
+        el.classList.add('text-slate-400');
+      });
+
+      const activeNav = document.getElementById(`nav-${tab}`);
+      if (activeNav) {
+        activeNav.classList.add('bg-indigo-600', 'text-white', 'shadow-lg');
+        activeNav.classList.remove('text-slate-400');
+      }
+
+      document.querySelectorAll('.module-content').forEach(panel => panel.classList.add('hidden'));
+      const targetPanel = document.getElementById(`module-${tab}`);
+      if (targetPanel) targetPanel.classList.remove('hidden');
+
+      const titles = {
+        account: 'Account Management',
+        inventory: 'Inventory Management',
+        supplier: 'Supplier Management',
+        pos: 'Transaction / Sales / POS'
+      };
+      document.getElementById('current-module-title').innerText = titles[tab] || 'Module';
+
+      if (tab === 'account') renderAccounts();
+      if (tab === 'inventory') renderInventory();
+      if (tab === 'supplier') renderSuppliers();
+      if (tab === 'pos') { renderPosProducts(); renderCart(); renderPosHistory(); }
+    }
+
+    // 5. SUPABASE REALTIME FETCHING
+    async function fetchSupabaseData() {
+      if (!supabaseClient) return;
+
+      try {
+        const { data: accs } = await supabaseClient
+          .from('accounts')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (accs && accs.length > 0) accountsState = accs;
+
+        const { data: inv } = await supabaseClient
+          .from('inventory')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (inv && inv.length > 0) inventoryState = inv;
+
+        const { data: sup } = await supabaseClient
+          .from('suppliers')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (sup && sup.length > 0) supplierState = sup;
+
+        const { data: trx } = await supabaseClient
+          .from('transactions')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (trx && trx.length > 0) transactionsState = trx;
+
+        renderAccounts();
+        renderInventory();
+        renderSuppliers();
+        renderPosProducts();
+        renderPosHistory();
+      } catch (err) {
+        console.log("Supabase fetch notice:", err);
+      }
+    }
+
+    // 6. MODULE RENDERING LOGIC
+    function renderAccounts() {
+      const tbody = document.getElementById('account-table-body');
+      tbody.innerHTML = accountsState.map(acc => `
+        <tr class="hover:bg-slate-900/40 transition-colors">
+          <td class="p-4 font-medium text-white flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-full bg-slate-800 text-indigo-400 flex items-center justify-center font-bold text-xs">
+              ${acc.name ? acc.name.charAt(0).toUpperCase() : 'U'}
+            </div>
+            <div>
+              <div>${acc.name || 'User'}</div>
+              <div class="text-[10px] text-slate-500">${acc.email || ''}</div>
+            </div>
+          </td>
+          <td class="p-4">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+              acc.role === 'Admin' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
+              acc.role === 'Manager' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+              'bg-amber-500/10 text-amber-400 border-amber-500/20'
+            }">${acc.role || 'User'}</span>
+          </td>
+          <td class="p-4"><span class="text-emerald-400 font-medium">${acc.status || 'Active'}</span></td>
+          <td class="p-4 text-slate-400">${formatDate(acc.created_at)}</td>
+          <td class="p-4 text-right">
+            <button onclick="deleteAccount('${acc.email}')" class="p-1 hover:text-rose-400 text-slate-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          </td>
+        </tr>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function renderInventory() {
+      const q = (document.getElementById('inventory-search')?.value || '').toLowerCase();
+      const tbody = document.getElementById('inventory-table-body');
+      
+      const filtered = inventoryState.filter(item => 
+        (item.name && item.name.toLowerCase().includes(q)) || (item.sku && item.sku.toLowerCase().includes(q))
+      );
+
+      tbody.innerHTML = filtered.map(item => `
+        <tr class="hover:bg-slate-900/40 transition-colors">
+          <td class="p-4">
+            <div class="font-medium text-white">${item.name}</div>
+            <div class="text-[10px] font-mono text-indigo-400">${item.sku}</div>
+          </td>
+          <td class="p-4 text-slate-400">${item.category || 'General'}</td>
+          <td class="p-4 font-semibold text-white">$${Number(item.price).toFixed(2)}</td>
+          <td class="p-4 font-mono ${item.stock < 10 ? 'text-rose-400 font-bold' : 'text-slate-300'}">${item.stock} units</td>
+          <td class="p-4">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.stock > 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">
+              ${item.stock > 0 ? 'In Stock' : 'Out of Stock'}
+            </span>
+          </td>
+          <td class="p-4 text-right">
+            <button onclick="deleteInventory('${item.sku}')" class="p-1 hover:text-rose-400 text-slate-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          </td>
+        </tr>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function renderSuppliers() {
+      const grid = document.getElementById('supplier-card-grid');
+      grid.innerHTML = supplierState.map(sup => `
+        <div class="glass-panel p-4 rounded-2xl border border-slate-800 hover-pop space-y-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <h4 class="font-bold text-white text-sm">${sup.company_name}</h4>
+              <p class="text-[10px] text-indigo-400 uppercase tracking-wider">${sup.category || 'Vendor'}</p>
+            </div>
+            <button onclick="deleteSupplier('${sup.company_name}')" class="text-slate-500 hover:text-rose-400"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>
+          <div class="space-y-1 text-xs text-slate-400 pt-2 border-t border-slate-800">
+            <div class="flex items-center gap-2"><i data-lucide="user" class="w-3.5 h-3.5 text-slate-500"></i> ${sup.contact_person || 'N/A'}</div>
+            <div class="flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5 text-slate-500"></i> ${sup.phone || 'N/A'}</div>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function renderPosProducts() {
+      const q = (document.getElementById('pos-search')?.value || '').toLowerCase();
+      const grid = document.getElementById('pos-product-grid');
+
+      const filtered = inventoryState.filter(item => 
+        (item.name && item.name.toLowerCase().includes(q)) || (item.sku && item.sku.toLowerCase().includes(q))
+      );
+
+      grid.innerHTML = filtered.map(item => `
+        <div onclick="addToCart('${item.sku}')" class="interactive glass-panel p-3 rounded-2xl border border-slate-800 hover:border-indigo-500/50 cursor-pointer hover-pop space-y-2">
+          <div class="flex justify-between items-start">
+            <span class="text-[10px] font-mono text-slate-500">${item.sku}</span>
+            <span class="text-xs font-bold text-emerald-400">$${Number(item.price).toFixed(2)}</span>
+          </div>
+          <h5 class="font-semibold text-xs text-white line-clamp-1">${item.name}</h5>
+          <div class="text-[10px] text-slate-400 flex justify-between">
+            <span>Stock: ${item.stock}</span>
+            <span class="text-indigo-400 font-medium">+ Add</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addToCart(itemSku) {
+      const item = inventoryState.find(i => i.sku === itemSku);
+      if (!item || item.stock <= 0) return;
+
+      const existing = posCart.find(c => c.sku === itemSku);
+      if (existing) {
+        if (existing.qty < item.stock) existing.qty++;
+      } else {
+        posCart.push({ ...item, qty: 1 });
+      }
+      renderCart();
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cart-items-container');
+      if (posCart.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">Cart is empty. Click items to add.</p>`;
+      } else {
+        container.innerHTML = posCart.map(c => `
+          <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
+            <div class="overflow-hidden">
+              <div class="font-medium text-white truncate">${c.name}</div>
+              <div class="text-[10px] text-indigo-400">$${Number(c.price).toFixed(2)} each</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="updateCartQty('${c.sku}', -1)" class="w-5 h-5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 font-bold">-</button>
+              <span class="font-mono text-white">${c.qty}</span>
+              <button onclick="updateCartQty('${c.sku}', 1)" class="w-5 h-5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 font-bold">+</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const sub = posCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+      const tax = sub * 0.12;
+      const total = sub + tax;
+
+      document.getElementById('cart-subtotal').innerText = `$${sub.toFixed(2)}`;
+      document.getElementById('cart-tax').innerText = `$${tax.toFixed(2)}`;
+      document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
+    }
+
+    function updateCartQty(sku, delta) {
+      const item = posCart.find(c => c.sku === sku);
+      if (!item) return;
+      item.qty += delta;
+      if (item.qty <= 0) {
+        posCart = posCart.filter(c => c.sku !== sku);
+      }
+      renderCart();
+    }
+
+    function clearCart() {
+      posCart = [];
+      renderCart();
+    }
+
+    async function checkoutPOS() {
+      if (posCart.length === 0) {
+        showToast('Cart is currently empty!', 'error');
+        return;
+      }
+
+      const sub = posCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+      const total = sub * 1.12;
+      const itemsSummary = posCart.map(i => `${i.name} (x${i.qty})`).join(', ');
+
+      for (const cartItem of posCart) {
+        const invItem = inventoryState.find(i => i.sku === cartItem.sku);
+        if (invItem) {
+          invItem.stock = Math.max(0, invItem.stock - cartItem.qty);
+
+          if (supabaseClient) {
+            await supabaseClient
+              .from('inventory')
+              .update({ stock: invItem.stock })
+              .eq('sku', invItem.sku);
+          }
+        }
+      }
+
+      const newTrx = {
+        id: Date.now().toString(),
+        ref_number: 'TRX-' + Math.floor(1000 + Math.random() * 9000),
+        items_summary: itemsSummary,
+        total_amount: total.toFixed(2),
+        items_count: posCart.reduce((a, b) => a + b.qty, 0),
+        processed_by: document.getElementById('user-display-name').innerText,
+        created_at: new Date().toISOString()
+      };
+
+      transactionsState.unshift(newTrx);
+
+      if (supabaseClient) {
+        await supabaseClient.from('transactions').insert([{
+          ref_number: newTrx.ref_number,
+          items_summary: newTrx.items_summary,
+          total_amount: newTrx.total_amount,
+          items_count: newTrx.items_count,
+          processed_by: newTrx.processed_by
+        }]);
+      }
+
+      showToast(`Transaction ${newTrx.ref_number} completed successfully!`, 'success');
+      clearCart();
+      renderInventory();
+      renderPosProducts();
+      renderPosHistory();
+    }
+
+    // Accordion Toggle for Transaction Details Row
+function toggleTrxDetails(refNum) {
+  const detailRow = document.getElementById(`detail-${refNum}`);
+  const icon = document.getElementById(`icon-${refNum}`);
+  if (!detailRow) return;
+
+  if (detailRow.classList.contains('hidden')) {
+    detailRow.classList.remove('hidden');
+    if (icon) icon.classList.add('rotate-180');
+  } else {
+    detailRow.classList.add('hidden');
+    if (icon) icon.classList.remove('rotate-180');
+  }
+}
+
+// Updated POS History Table Renderer with Expandable Rows
+function renderPosHistory() {
+  const tbody = document.getElementById('pos-history-table-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = transactionsState.map(t => {
+    const itemsList = t.items_summary ? t.items_summary.split(', ') : ['N/A'];
+
+    return `
+      <tr class="hover:bg-slate-900/40 border-b border-slate-800/40 transition-colors">
+        <td class="p-4 font-mono font-bold text-indigo-400 whitespace-nowrap">
+          <div class="flex items-center gap-2">
+            <button onclick="toggleTrxDetails('${t.ref_number}')" class="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all">
+              <i data-lucide="chevron-down" id="icon-${t.ref_number}" class="w-4 h-4 transition-transform duration-200"></i>
+            </button>
+            <span>${t.ref_number}</span>
+          </div>
+        </td>
+        <td class="p-4 font-medium text-slate-200">
+          <div onclick="toggleTrxDetails('${t.ref_number}')" class="flex items-center gap-2 cursor-pointer group">
+            <span class="max-w-xs truncate text-slate-300 group-hover:text-white transition-colors">${t.items_summary || 'N/A'}</span>
+            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 whitespace-nowrap hover:bg-indigo-600 hover:text-white transition-all">
+              Expand (${itemsList.length})
+            </span>
+          </div>
+        </td>
+        <td class="p-4 text-slate-400 whitespace-nowrap">${formatDate(t.created_at)}</td>
+        <td class="p-4 text-slate-300">${t.items_count} items</td>
+        <td class="p-4 font-bold text-emerald-400">$${Number(t.total_amount).toFixed(2)}</td>
+        <td class="p-4 text-slate-300">${t.processed_by}</td>
+      </tr>
+      <!-- Expandable Item Breakdown Sub-Row -->
+      <tr id="detail-${t.ref_number}" class="hidden bg-slate-950/90">
+        <td colspan="6" class="p-4 border-b border-slate-800/80">
+          <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800/80 space-y-2">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="shopping-bag" class="w-3.5 h-3.5 text-indigo-400"></i> Purchased Items Breakdown
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              ${itemsList.map(item => `
+                <span class="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs text-slate-200 font-medium shadow-sm">
+                  ${item}
+                </span>
+              `).join('')}
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  lucide.createIcons();
+}
+
+    function togglePosSubView(view) {
+      if (view === 'terminal') {
+        document.getElementById('pos-terminal-view').classList.remove('hidden');
+        document.getElementById('pos-history-view').classList.add('hidden');
+        document.getElementById('tab-pos-terminal').className = "pb-2 text-indigo-400 border-b-2 border-indigo-500";
+        document.getElementById('tab-pos-history').className = "pb-2 text-slate-400 hover:text-white";
+      } else {
+        document.getElementById('pos-terminal-view').classList.add('hidden');
+        document.getElementById('pos-history-view').classList.remove('hidden');
+        document.getElementById('tab-pos-history').className = "pb-2 text-indigo-400 border-b-2 border-indigo-500";
+        document.getElementById('tab-pos-terminal').className = "pb-2 text-slate-400 hover:text-white";
+      }
+    }
+
+    // 7. MODALS & FORMS
+    function openAddAccountModal() { document.getElementById('modal-account').classList.remove('hidden'); }
+    function openAddInventoryModal() { document.getElementById('modal-inventory').classList.remove('hidden'); }
+    function openAddSupplierModal() { document.getElementById('modal-supplier').classList.remove('hidden'); }
+    function toggleSqlModal() { document.getElementById('modal-sql').classList.toggle('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    async function submitNewAccount(e) {
+      e.preventDefault();
+      const name = document.getElementById('acc-name').value;
+      const email = document.getElementById('acc-email').value;
+      const password = document.getElementById('acc-password').value;
+      const role = document.getElementById('acc-role').value;
+
+      const newObj = { id: Date.now().toString(), name, email, password, role, status: 'Active', created_at: new Date().toISOString() };
+      accountsState.unshift(newObj);
+
+      if (supabaseClient) {
+        await supabaseClient.from('accounts').insert([{ name, email, password, role }]);
+      }
+
+      document.getElementById('acc-name').value = '';
+      document.getElementById('acc-email').value = '';
+      document.getElementById('acc-password').value = '';
+
+      showToast('Account registered successfully', 'success');
+      closeModal('modal-account');
+      renderAccounts();
+    }
+
+    async function submitNewInventory(e) {
+      e.preventDefault();
+      const name = document.getElementById('inv-name').value;
+      const sku = document.getElementById('inv-sku').value;
+      const price = parseFloat(document.getElementById('inv-price').value);
+      const stock = parseInt(document.getElementById('inv-stock').value);
+      const category = document.getElementById('inv-category').value;
+
+      const newObj = { id: Date.now().toString(), sku, name, price, stock, category, created_at: new Date().toISOString() };
+      inventoryState.unshift(newObj);
+
+      if (supabaseClient) {
+        await supabaseClient.from('inventory').insert([{ sku, name, price, stock, category }]);
+      }
+
+      document.getElementById('inv-name').value = '';
+      document.getElementById('inv-sku').value = '';
+      document.getElementById('inv-price').value = '';
+      document.getElementById('inv-stock').value = '';
+      document.getElementById('inv-category').value = '';
+
+      showToast('Product saved to inventory!', 'success');
+      closeModal('modal-inventory');
+      renderInventory();
+      renderPosProducts();
+    }
+
+    async function submitNewSupplier(e) {
+      e.preventDefault();
+      const company_name = document.getElementById('sup-name').value;
+      const contact_person = document.getElementById('sup-contact').value;
+      const phone = document.getElementById('sup-phone').value;
+      const category = document.getElementById('sup-category').value;
+
+      const newObj = { id: Date.now().toString(), company_name, contact_person, phone, category, created_at: new Date().toISOString() };
+      supplierState.unshift(newObj);
+
+      if (supabaseClient) {
+        await supabaseClient.from('suppliers').insert([{ company_name, contact_person, phone, category }]);
+      }
+
+      document.getElementById('sup-name').value = '';
+      document.getElementById('sup-contact').value = '';
+      document.getElementById('sup-phone').value = '';
+      document.getElementById('sup-category').value = '';
+
+      showToast('Supplier partner added!', 'success');
+      closeModal('modal-supplier');
+      renderSuppliers();
+    }
+
+    // 8. DELETION HANDLERS
+    async function deleteAccount(emailOrId) {
+      accountsState = accountsState.filter(a => a.email !== emailOrId && a.id !== emailOrId);
+      if (supabaseClient) {
+        if (emailOrId.includes('@')) {
+          await supabaseClient.from('accounts').delete().eq('email', emailOrId);
+        } else {
+          await supabaseClient.from('accounts').delete().eq('id', emailOrId);
+        }
+      }
+      showToast('Account removed', 'success');
+      renderAccounts();
+    }
+
+    async function deleteInventory(skuOrId) {
+      inventoryState = inventoryState.filter(i => i.sku !== skuOrId && i.id !== skuOrId);
+      if (supabaseClient) {
+        await supabaseClient.from('inventory').delete().eq('sku', skuOrId);
+      }
+      showToast('Item deleted from inventory', 'success');
+      renderInventory();
+      renderPosProducts();
+    }
+
+    async function deleteSupplier(companyOrId) {
+      supplierState = supplierState.filter(s => s.company_name !== companyOrId && s.id !== companyOrId);
+      if (supabaseClient) {
+        await supabaseClient.from('suppliers').delete().eq('company_name', companyOrId);
+      }
+      showToast('Supplier removed', 'success');
+      renderSuppliers();
+    }
+
+    function togglePasswordVisibility() {
+      const pwdInput = document.getElementById('acc-password');
+      const eyeIcon = document.getElementById('pwd-eye-icon');
+      
+      if (!pwdInput || !eyeIcon) return;
+
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        eyeIcon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        pwdInput.type = 'password';
+        eyeIcon.setAttribute('data-lucide', 'eye');
+      }
+      
+      lucide.createIcons();
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return 'N/A';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      
+      return d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+
+    function showToast(message, type = 'success') {
+      playSoothingClick(520, 0.08);
+
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      const isSuccess = type === 'success';
+
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl glass-panel border ${
+        isSuccess ? 'border-emerald-500/30 bg-emerald-950/40 text-emerald-300' : 'border-rose-500/30 bg-rose-950/40 text-rose-300'
+      } shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0`;
+
+      toast.innerHTML = `
+        <div class="p-1.5 rounded-xl ${isSuccess ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
+          <i data-lucide="${isSuccess ? 'check-circle-2' : 'alert-circle'}" class="w-4 h-4"></i>
+        </div>
+        <span class="text-xs font-medium text-slate-100">${message}</span>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-4', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // On startup, render icons and fetch Supabase records immediately
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      fetchSupabaseData();
+    });
+  </script>
+</body>
+</html>
