@@ -1203,6 +1203,47 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     </div>
   </div>
 
+  
+  <!-- RUN PAYROLL MODAL -->
+  <div id="modal-payroll" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <h3 class="font-bold text-sm text-white flex items-center gap-2">
+          <i data-lucide="calculator" class="w-4 h-4 text-indigo-400"></i> Run Payroll Period
+        </h3>
+        <button onclick="closeModal('modal-payroll')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <form onsubmit="submitPayrollForm(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Employee Name</label>
+          <input type="text" id="pay-emp-name" required placeholder="e.g. Maria Santos" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Hourly Rate (₱)</label>
+            <input type="number" step="0.01" id="pay-rate" required oninput="calcPayrollPreview()" placeholder="120.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Worked Hours</label>
+            <input type="number" step="0.5" id="pay-hours" required oninput="calcPayrollPreview()" placeholder="80" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Statutory Deductions (SSS/PhilHealth/Pag-IBIG) (₱)</label>
+          <input type="number" step="0.01" id="pay-deductions" value="850.00" oninput="calcPayrollPreview()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+        </div>
+        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+          <div class="flex justify-between text-slate-400"><span>Estimated Gross:</span><span id="pay-prev-gross" class="font-bold text-white">₱0.00</span></div>
+          <div class="flex justify-between text-slate-400"><span>Estimated Net Salary:</span><span id="pay-prev-net" class="font-bold text-emerald-400">₱0.00</span></div>
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-payroll')" class="px-4 py-2 bg-slate-800 rounded-xl text-slate-300">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold">Process & Record Payroll</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- TOAST CONTAINER -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
 
@@ -1340,14 +1381,28 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     }
 
     function applyRolePermissions() {
+      const isAdmin = currentRole === 'Admin';
+      const isManager = currentRole === 'Manager';
+      const isCashier = currentRole === 'Cashier';
+
       const navAcc = document.getElementById('nav-account');
+      const navReports = document.getElementById('nav-reports');
+      const navPayroll = document.getElementById('nav-payroll');
       const navLogs = document.getElementById('nav-logs');
-      if (currentRole === 'Cashier') {
-        if (navAcc) navAcc.style.display = 'none';
-        if (navLogs) navLogs.style.display = 'none';
-      } else {
-        if (navAcc) navAcc.style.display = 'flex';
-        if (navLogs) navLogs.style.display = 'flex';
+
+      // Account Management is exclusively for Admins
+      if (navAcc) navAcc.style.display = isAdmin ? 'flex' : 'none';
+
+      // Reports, Payroll, and Audit Logs hidden from Cashiers
+      if (navReports) navReports.style.display = isCashier ? 'none' : 'flex';
+      if (navPayroll) navPayroll.style.display = isCashier ? 'none' : 'flex';
+      if (navLogs) navLogs.style.display = isCashier ? 'none' : 'flex';
+
+      // Enforce tab redirects if on unauthorized tab
+      if (isCashier) {
+        switchTab('pos');
+      } else if (isManager && activeTab === 'account') {
+        switchTab('inventory');
       }
     }
 
@@ -1413,6 +1468,21 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 
         const { data: trx } = await supabaseClient.from('transactions').select('*').order('created_at', { ascending: false });
         if (trx && trx.length > 0) transactionsState = trx;
+
+        const { data: pay, error: payErr } = await supabaseClient.from('payroll').select('*').order('created_at', { ascending: false });
+        if (!payErr && pay && pay.length > 0) {
+          payrollState = pay.map(p => ({
+            id: p.id,
+            name: p.employee_name || p.name,
+            rate: Number(p.hourly_rate || p.rate || 0),
+            hours: Number(p.worked_hours || p.hours || 0),
+            gross: Number(p.gross_salary || p.gross || 0),
+            deduct: Number(p.deductions || p.deduct || 0),
+            net: Number(p.net_salary || p.net || 0)
+          }));
+        } else if (payErr) {
+          console.info("Notice: Supabase payroll table not initialized yet. Using local state fallback.");
+        }
       } catch (err) {
         console.log("Supabase fetch notice:", err);
       }
@@ -1531,21 +1601,114 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       `).join('');
     }
 
+    
+    function calcPayrollPreview() {
+      const rate = parseFloat(document.getElementById('pay-rate')?.value) || 0;
+      const hours = parseFloat(document.getElementById('pay-hours')?.value) || 0;
+      const deduct = parseFloat(document.getElementById('pay-deductions')?.value) || 0;
+
+      const gross = rate * hours;
+      const net = Math.max(0, gross - deduct);
+
+      const prevGross = document.getElementById('pay-prev-gross');
+      const prevNet = document.getElementById('pay-prev-net');
+      if (prevGross) prevGross.innerText = `₱${gross.toFixed(2)}`;
+      if (prevNet) prevNet.innerText = `₱${net.toFixed(2)}`;
+    }
+
+    async function submitPayrollForm(e) {
+      e.preventDefault();
+      const name = document.getElementById('pay-emp-name').value.trim();
+      const rate = parseFloat(document.getElementById('pay-rate').value) || 0;
+      const hours = parseFloat(document.getElementById('pay-hours').value) || 0;
+      const deduct = parseFloat(document.getElementById('pay-deductions').value) || 0;
+
+      const gross = rate * hours;
+      const net = Math.max(0, gross - deduct);
+
+      const newPayroll = {
+        id: Date.now().toString(),
+        name: name,
+        rate: rate,
+        hours: hours,
+        gross: gross,
+        deduct: deduct,
+        net: net
+      };
+
+      if (supabaseClient) {
+        try {
+          const dbObj = {
+            employee_name: name,
+            hourly_rate: rate,
+            worked_hours: hours,
+            gross_salary: gross,
+            deductions: deduct,
+            net_salary: net,
+            payroll_period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+            status: 'Paid',
+            created_at: new Date().toISOString()
+          };
+          const { data, error } = await supabaseClient.from('payroll').insert([dbObj]).select();
+          if (error) {
+            console.error("Supabase Payroll Insert Error:", error);
+            showToast("Warning: Could not save to Supabase DB (" + (error.message || "400 Error") + ")", "error");
+          } else if (data && data[0]) {
+            newPayroll.id = data[0].id;
+          }
+        } catch(err) { console.warn("Supabase payroll insert error:", err); }
+      }
+
+      payrollState.unshift(newPayroll);
+      await logAuditEvent('Payroll', `Processed payroll for ${name} (Net: ₱${net.toFixed(2)})`);
+
+      document.getElementById('pay-emp-name').value = '';
+      document.getElementById('pay-rate').value = '';
+      document.getElementById('pay-hours').value = '';
+
+      closeModal('modal-payroll');
+      showToast(`Payroll for ${name} processed!`, 'success');
+      renderPayroll();
+      updateKPIStats();
+    }
+
     function renderPayroll() {
       const tbody = document.getElementById('payroll-table-body');
       if (!tbody) return;
 
       tbody.innerHTML = payrollState.map(p => `
         <tr class="hover:bg-slate-900/40 transition-colors">
-          <td class="p-4 font-medium text-white">${p.name}</td>
-          <td class="p-4">₱${p.rate.toFixed(2)}</td>
-          <td class="p-4">${p.hours} hrs</td>
-          <td class="p-4 font-bold text-white">₱${p.gross.toFixed(2)}</td>
-          <td class="p-4 text-rose-400">-₱${p.deduct.toFixed(2)}</td>
-          <td class="p-4 font-bold text-emerald-400">₱${p.net.toFixed(2)}</td>
+          <td class="p-4 font-medium text-white">${p.name || p.employee_name}</td>
+          <td class="p-4">₱${Number(p.rate || p.hourly_rate || 0).toFixed(2)}</td>
+          <td class="p-4">${p.hours || p.worked_hours || 0} hrs</td>
+          <td class="p-4 font-bold text-white">₱${Number(p.gross || p.gross_salary || 0).toFixed(2)}</td>
+          <td class="p-4 text-rose-400">-₱${Number(p.deduct || p.deductions || 0).toFixed(2)}</td>
+          <td class="p-4 font-bold text-emerald-400">₱${Number(p.net || p.net_salary || 0).toFixed(2)}</td>
           <td class="p-4 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Paid</span></td>
         </tr>
       `).join('');
+    }
+
+    
+    async function logAuditEvent(moduleName, actionDetails) {
+      const userName = document.getElementById('user-display-name')?.innerText || 'System';
+      const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+      const logEntry = { time: timeStr, user: userName, module: moduleName, action: actionDetails };
+      auditLogsState.unshift(logEntry);
+      renderLogs();
+
+      if (supabaseClient) {
+        try {
+          const { error: logErr } = await supabaseClient.from('system_logs').insert([{
+            user_name: userName,
+            module: moduleName,
+            action_details: actionDetails,
+            time_stamp: new Date().toISOString()
+          }]);
+          if (logErr) console.warn("Supabase Log Insert Error:", logErr);
+        } catch(err) { console.warn("Supabase audit log error:", err); }
+      }
     }
 
     function renderLogs() {
@@ -2024,7 +2187,17 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 
     function openAddSupplierModal() { document.getElementById('modal-supplier').classList.remove('hidden'); }
     function toggleSqlModal() { document.getElementById('modal-sql').classList.toggle('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    
+    function openModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) modal.classList.add('hidden');
+    }
+
 
     async function submitAccountForm(e) {
       e.preventDefault();
