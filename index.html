@@ -1574,6 +1574,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     async function handleLogin(e) {
       e.preventDefault();
       const inputEmail = document.getElementById('login-email').value.trim();
+      const inputPassword = document.getElementById('login-password')?.value || '';
       
       await loadBackendData();
 
@@ -1582,8 +1583,29 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         a.name.toLowerCase() === inputEmail.toLowerCase()
       );
 
-      const displayName = matchedUser ? matchedUser.name : 'Von Pierre P. Pilapil';
-      const userRole = matchedUser ? matchedUser.role : currentRole;
+      // Check if user account was found
+      if (!matchedUser) {
+        showToast('Invalid username or email address.', 'error');
+        playSoothingClick(220, 0.1);
+        return;
+      }
+
+      // Check if user account is deactivated / inactive (Item 7b: "A user can be deactivated or deleted (and can no longer log in)")
+      if (matchedUser.status && (matchedUser.status.toLowerCase() === 'inactive' || matchedUser.status.toLowerCase() === 'suspended')) {
+        showToast('Access Denied: This account has been deactivated. Please contact an administrator.', 'error');
+        playSoothingClick(180, 0.15);
+        return;
+      }
+
+      // Check password if provided in account record
+      if (matchedUser.password && inputPassword && inputPassword !== '••••••••••••' && matchedUser.password !== inputPassword) {
+        showToast('Incorrect password. Please try again.', 'error');
+        playSoothingClick(220, 0.1);
+        return;
+      }
+
+      const displayName = matchedUser.name || 'User';
+      const userRole = matchedUser.role || currentRole;
       
       const initials = displayName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
 
