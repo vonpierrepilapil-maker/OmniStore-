@@ -630,23 +630,61 @@
           <!-- MODULE 5: HR & PAYROLL SYSTEM -->
           <div id="module-payroll" class="module-content space-y-6 hidden">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <p class="text-xs text-slate-400">Compute employee gross salaries, statutory deductions (SSS, PhilHealth, Pag-IBIG), and net payouts.</p>
+              <div>
+                <h3 class="text-sm font-bold text-white">Payroll & Statutory Salaries</h3>
+                <p class="text-xs text-slate-400">Compute gross pay, statutory deductions (SSS, PhilHealth, Pag-IBIG, Tax), and net payout reports.</p>
+              </div>
               <button onclick="openModal('modal-payroll')" class="hover-pop w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all">
                 <i data-lucide="calculator" class="w-4 h-4"></i> Run Payroll Period
               </button>
             </div>
 
+            <!-- FILTER BAR FOR SALARY REPORTS -->
+            <div class="glass-panel p-3.5 rounded-2xl border border-slate-800 flex flex-wrap items-center gap-3 text-xs">
+              <div class="flex items-center gap-2">
+                <i data-lucide="filter" class="w-4 h-4 text-indigo-400"></i>
+                <span class="text-slate-400 font-medium">Filter Reports:</span>
+              </div>
+              <div class="flex-1 min-w-[150px]">
+                <input type="text" id="payroll-filter-emp" oninput="renderPayroll()" placeholder="Search employee..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              </div>
+              <div>
+                <select id="payroll-filter-month" onchange="renderPayroll()" class="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none">
+                  <option value="All">All Months</option>
+                  <option value="January">January</option>
+                  <option value="February">February</option>
+                  <option value="March">March</option>
+                  <option value="April">April</option>
+                  <option value="May">May</option>
+                  <option value="June">June</option>
+                  <option value="July">July</option>
+                  <option value="August">August</option>
+                  <option value="September">September</option>
+                  <option value="October">October</option>
+                  <option value="November">November</option>
+                  <option value="December">December</option>
+                </select>
+              </div>
+              <div>
+                <select id="payroll-filter-year" onchange="renderPayroll()" class="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none">
+                  <option value="All">All Years</option>
+                  <option value="2026">2026</option>
+                  <option value="2025" selected>2025</option>
+                  <option value="2024">2024</option>
+                </select>
+              </div>
+            </div>
+
             <div class="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
               <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs text-slate-300 min-w-[650px]">
+                <table class="w-full text-left text-xs text-slate-300 min-w-[750px]">
                   <thead class="bg-slate-900/80 text-slate-400 border-b border-slate-800 uppercase text-[10px] tracking-wider">
                     <tr>
                       <th class="p-4">Employee</th>
-                      <th class="p-4">Rate / Hr</th>
-                      <th class="p-4">Worked Hours</th>
-                      <th class="p-4">Gross Salary</th>
-                      <th class="p-4">Deductions</th>
-                      <th class="p-4">Net Salary</th>
+                      <th class="p-4">Period (Month / Year)</th>
+                      <th class="p-4">Gross Pay</th>
+                      <th class="p-4">Deductions (SSS, Pag-IBIG, PhilHealth, Tax)</th>
+                      <th class="p-4">Net Pay</th>
                       <th class="p-4 text-right">Status</th>
                     </tr>
                   </thead>
@@ -987,14 +1025,15 @@
     </div>
   </div>
 
-  <!-- ADD SUPPLIER MODAL -->
+  <!-- ADD / EDIT SUPPLIER MODAL -->
   <div id="modal-supplier" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-        <h3 class="font-bold text-sm text-white">Add Supplier Partner</h3>
+        <h3 id="modal-supplier-title" class="font-bold text-sm text-white">Add Supplier Partner</h3>
         <button onclick="closeModal('modal-supplier')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <form onsubmit="submitNewSupplier(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="sup-edit-id" value="">
         <div>
           <label class="block text-slate-400 mb-1">Supplier Company Name</label>
           <input type="text" id="sup-name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
@@ -1013,9 +1052,13 @@
             <input type="text" id="sup-category" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
           </div>
         </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Business Address</label>
+          <input type="text" id="sup-address" placeholder="e.g. 123 Tech Ave, Makati City" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+        </div>
         <div class="pt-2 flex justify-end gap-2">
           <button type="button" onclick="closeModal('modal-supplier')" class="px-4 py-2 bg-slate-800 rounded-xl text-slate-300">Cancel</button>
-          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold">Save Supplier</button>
+          <button type="submit" id="modal-supplier-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold">Save Supplier</button>
         </div>
       </form>
     </div>
@@ -1214,36 +1257,92 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
   
   <!-- RUN PAYROLL MODAL -->
   <div id="modal-payroll" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
+    <div class="glass-panel w-full max-w-lg p-6 rounded-2xl border border-slate-800 space-y-4 max-h-[92vh] overflow-y-auto">
       <div class="flex justify-between items-center pb-2 border-b border-slate-800">
         <h3 class="font-bold text-sm text-white flex items-center gap-2">
           <i data-lucide="calculator" class="w-4 h-4 text-indigo-400"></i> Run Payroll Period
         </h3>
         <button onclick="closeModal('modal-payroll')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <form onsubmit="submitPayrollForm(event)" class="space-y-3 text-xs">
+      <form onsubmit="submitPayrollForm(event)" class="space-y-3.5 text-xs">
         <div>
-          <label class="block text-slate-400 mb-1">Employee Name</label>
-          <input type="text" id="pay-emp-name" required placeholder="e.g. Maria Santos" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+          <label class="block text-slate-400 mb-1">Employee / Cashier</label>
+          <div class="flex gap-2">
+            <select id="pay-emp-select" onchange="syncPayEmpName()" class="w-1/2 bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+              <option value="Juan Dela Cruz">Juan Dela Cruz</option>
+              <option value="Cyles Todd G. Matuguina">Cyles Todd G. Matuguina</option>
+              <option value="Errol E. Areglo">Errol E. Areglo</option>
+              <option value="Blake Johnwalfer T. Book">Blake Johnwalfer T. Book</option>
+              <option value="Von Pierre P. Pilapil">Von Pierre P. Pilapil</option>
+            </select>
+            <input type="text" id="pay-emp-name" required value="Juan Dela Cruz" placeholder="Or enter employee name" class="w-1/2 bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+          </div>
         </div>
+
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-400 mb-1">Hourly Rate (₱)</label>
-            <input type="number" step="0.01" id="pay-rate" required oninput="calcPayrollPreview()" placeholder="120.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+            <label class="block text-slate-400 mb-1">Payroll Month</label>
+            <select id="pay-month" onchange="calcPayrollPreview()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+              <option value="January">January</option>
+              <option value="February">February</option>
+              <option value="March">March</option>
+              <option value="April">April</option>
+              <option value="May">May</option>
+              <option value="June">June</option>
+              <option value="July">July</option>
+              <option value="August">August</option>
+              <option value="September">September</option>
+              <option value="October">October</option>
+              <option value="November" selected>November</option>
+              <option value="December">December</option>
+            </select>
           </div>
           <div>
-            <label class="block text-slate-400 mb-1">Worked Hours</label>
-            <input type="number" step="0.5" id="pay-hours" required oninput="calcPayrollPreview()" placeholder="80" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+            <label class="block text-slate-400 mb-1">Payroll Year</label>
+            <input type="number" id="pay-year" required value="2025" oninput="calcPayrollPreview()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
           </div>
         </div>
+
         <div>
-          <label class="block text-slate-400 mb-1">Statutory Deductions (SSS/PhilHealth/Pag-IBIG) (₱)</label>
-          <input type="number" step="0.01" id="pay-deductions" value="850.00" oninput="calcPayrollPreview()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+          <label class="block text-slate-400 mb-1 font-semibold text-indigo-300">Gross Pay (₱)</label>
+          <input type="number" step="0.01" id="pay-gross" required value="30000.00" oninput="calcPayrollPreview()" placeholder="30000.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold">
         </div>
+
+        <!-- STATUTORY DEDUCTION FIELDS -->
+        <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 space-y-2.5">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-white text-[11px] uppercase tracking-wider">Statutory Deductions (Item 17)</span>
+            <span id="pay-prev-deduct" class="text-xs font-bold text-rose-400">₱3,800.00</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-[11px]">
+            <div>
+              <label class="block text-slate-400 mb-0.5">SSS (₱)</label>
+              <input type="number" step="0.01" id="pay-deduct-sss" value="1200.00" oninput="calcPayrollPreview()" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-0.5">Pag-IBIG (₱)</label>
+              <input type="number" step="0.01" id="pay-deduct-pagibig" value="200.00" oninput="calcPayrollPreview()" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-0.5">PhilHealth (₱)</label>
+              <input type="number" step="0.01" id="pay-deduct-philhealth" value="400.00" oninput="calcPayrollPreview()" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-0.5">Withholding Tax (₱)</label>
+              <input type="number" step="0.01" id="pay-deduct-tax" value="2000.00" oninput="calcPayrollPreview()" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200">
+            </div>
+          </div>
+        </div>
+
         <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
-          <div class="flex justify-between text-slate-400"><span>Estimated Gross:</span><span id="pay-prev-gross" class="font-bold text-white">₱0.00</span></div>
-          <div class="flex justify-between text-slate-400"><span>Estimated Net Salary:</span><span id="pay-prev-net" class="font-bold text-emerald-400">₱0.00</span></div>
+          <div class="flex justify-between text-slate-400"><span>Sample Gross Pay:</span><span id="pay-prev-gross" class="font-bold text-white">₱30,000.00</span></div>
+          <div class="flex justify-between text-slate-400"><span>Total Deductions:</span><span id="pay-prev-total-deduct" class="font-bold text-rose-400">-₱3,800.00</span></div>
+          <div class="flex justify-between text-slate-400 pt-1 border-t border-slate-800">
+            <span class="font-bold text-white">Net Pay (Gross - Deductions):</span>
+            <span id="pay-prev-net" class="font-bold text-emerald-400 text-sm">₱26,200.00</span>
+          </div>
         </div>
+
         <div class="pt-2 flex justify-end gap-2">
           <button type="button" onclick="closeModal('modal-payroll')" class="px-4 py-2 bg-slate-800 rounded-xl text-slate-300">Cancel</button>
           <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold">Process & Record Payroll</button>
@@ -1360,9 +1459,9 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     ];
 
     let payrollState = [
-      { id: '1', name: 'Cyles Todd G. Matuguina', rate: 120.00, hours: 80, gross: 9600.00, deduct: 850.00, net: 8750.00 },
-      { id: '2', name: 'Errol E. Areglo', rate: 110.00, hours: 80, gross: 8800.00, deduct: 780.00, net: 8020.00 },
-      { id: '3', name: 'Blake Johnwalfer T. Book', rate: 95.00, hours: 80, gross: 7600.00, deduct: 650.00, net: 6950.00 }
+      { id: '1', name: 'Juan Dela Cruz', employee_name: 'Juan Dela Cruz', payroll_period: 'November 2025', gross: 30000.00, gross_salary: 30000.00, deduct: 3800.00, deductions: 3800.00, net: 26200.00, net_salary: 26200.00, sss: 1200.00, pagibig: 200.00, philhealth: 400.00, tax: 2000.00 },
+      { id: '2', name: 'Cyles Todd G. Matuguina', employee_name: 'Cyles Todd G. Matuguina', payroll_period: 'November 2025', gross: 25000.00, gross_salary: 25000.00, deduct: 3100.00, deductions: 3100.00, net: 21900.00, net_salary: 21900.00 },
+      { id: '3', name: 'Errol E. Areglo', employee_name: 'Errol E. Areglo', payroll_period: 'October 2025', gross: 24000.00, gross_salary: 24000.00, deduct: 2900.00, deductions: 2900.00, net: 21100.00, net_salary: 21100.00 }
     ];
 
     let auditLogsState = [
@@ -1553,11 +1652,16 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
             payrollState = res.data.payroll.map(p => ({
               id: p.id,
               name: p.employee_name || p.name,
+              employee_name: p.employee_name || p.name,
+              payroll_period: p.payroll_period || 'November 2025',
               rate: Number(p.hourly_rate || p.rate || 0),
               hours: Number(p.worked_hours || p.hours || 0),
               gross: Number(p.gross_salary || p.gross || 0),
+              gross_salary: Number(p.gross_salary || p.gross || 0),
               deduct: Number(p.deductions || p.deduct || 0),
-              net: Number(p.net_salary || p.net || 0)
+              deductions: Number(p.deductions || p.deduct || 0),
+              net: Number(p.net_salary || p.net || 0),
+              net_salary: Number(p.net_salary || p.net || 0)
             }));
           }
           if (res.data.logs && res.data.logs.length > 0) {
@@ -1651,19 +1755,30 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         (item.name && item.name.toLowerCase().includes(q)) || (item.sku && item.sku.toLowerCase().includes(q))
       );
 
-      tbody.innerHTML = filtered.map(item => `
-        <tr class="hover:bg-slate-900/40 transition-colors">
+      tbody.innerHTML = filtered.map(item => {
+        const isLowStock = item.stock <= (item.min_stock_alert || 10);
+        const isExpired = item.expiry_date && item.expiry_date !== 'N/A' && new Date(item.expiry_date) < new Date();
+        const isExpiringSoon = item.expiry_date && item.expiry_date !== 'N/A' && !isExpired && ((new Date(item.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)) <= 30;
+
+        return `
+        <tr class="hover:bg-slate-900/40 transition-colors ${isExpired ? 'bg-rose-950/20' : (isLowStock ? 'bg-amber-950/10' : '')}">
           <td class="p-4">
-            <div class="font-medium text-white">${item.name}</div>
+            <div class="font-medium text-white flex items-center gap-1.5">
+              ${item.name}
+              ${isLowStock ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">LOW STOCK</span>' : ''}
+              ${isExpired ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">EXPIRED</span>' : (isExpiringSoon ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">EXPIRING SOON</span>' : '')}
+            </div>
             <div class="text-[10px] font-mono text-indigo-400">Barcode: ${item.sku}</div>
           </td>
           <td class="p-4 text-slate-400">${item.category || 'General'}</td>
           <td class="p-4 font-semibold text-white">₱${Number(item.price).toFixed(2)}</td>
-          <td class="p-4 font-mono ${item.stock < 10 ? 'text-amber-400 font-bold' : 'text-slate-300'}">${item.stock} units</td>
-          <td class="p-4 text-slate-400">${item.expiry_date || 'N/A'}</td>
+          <td class="p-4 font-mono ${isLowStock ? 'text-amber-400 font-bold' : 'text-slate-300'}">${item.stock} units</td>
+          <td class="p-4 ${isExpired ? 'text-rose-400 font-bold' : (isExpiringSoon ? 'text-orange-400 font-semibold' : 'text-slate-400')}">
+            ${item.expiry_date || 'N/A'}
+          </td>
           <td class="p-4">
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.stock > 0 ? (item.stock < 10 ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400') : 'bg-rose-500/10 text-rose-400'}">
-              ${item.stock > 0 ? (item.stock < 10 ? 'Low Stock' : 'In Stock') : 'Out of Stock'}
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.stock > 0 ? (isLowStock ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400') : 'bg-rose-500/10 text-rose-400'}">
+              ${item.stock > 0 ? (isLowStock ? 'Low Stock' : 'In Stock') : 'Out of Stock'}
             </span>
           </td>
           <td class="p-4 text-right flex items-center justify-end gap-2">
@@ -1671,9 +1786,35 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
             <button onclick="editInventory('${item.id}')" class="p-1 hover:text-indigo-400 text-slate-500 transition-colors"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
             <button onclick="deleteInventory('${item.sku}')" class="p-1 hover:text-rose-400 text-slate-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
           </td>
-        </tr>
-      `).join('');
+        </tr>`;
+      }).join('');
       lucide.createIcons();
+    }
+
+    function openAddSupplierModal() {
+      document.getElementById('sup-edit-id').value = '';
+      document.getElementById('modal-supplier-title').innerText = 'Add Supplier Partner';
+      document.getElementById('modal-supplier-btn').innerText = 'Save Supplier';
+      document.getElementById('sup-name').value = '';
+      document.getElementById('sup-contact').value = '';
+      document.getElementById('sup-phone').value = '';
+      document.getElementById('sup-category').value = '';
+      document.getElementById('sup-address').value = '';
+      document.getElementById('modal-supplier').classList.remove('hidden');
+    }
+
+    function editSupplier(idOrName) {
+      const sup = supplierState.find(s => s.id === idOrName || s.company_name === idOrName);
+      if (!sup) return;
+      document.getElementById('sup-edit-id').value = sup.id || sup.company_name;
+      document.getElementById('modal-supplier-title').innerText = 'Edit Supplier Partner';
+      document.getElementById('modal-supplier-btn').innerText = 'Update Supplier';
+      document.getElementById('sup-name').value = sup.company_name || '';
+      document.getElementById('sup-contact').value = sup.contact_person || '';
+      document.getElementById('sup-phone').value = sup.phone || '';
+      document.getElementById('sup-category').value = sup.category || '';
+      document.getElementById('sup-address').value = sup.address || '';
+      document.getElementById('modal-supplier').classList.remove('hidden');
     }
 
     function renderSuppliers() {
@@ -1687,11 +1828,15 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
               <h4 class="font-bold text-white text-sm">${sup.company_name}</h4>
               <p class="text-[10px] text-indigo-400 uppercase tracking-wider">${sup.category || 'Vendor'}</p>
             </div>
-            <button onclick="deleteSupplier('${sup.company_name}')" class="text-slate-500 hover:text-rose-400"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            <div class="flex items-center gap-1">
+              <button onclick="editSupplier('${sup.id || sup.company_name}')" class="p-1 text-slate-500 hover:text-indigo-400 transition-colors"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+              <button onclick="deleteSupplier('${sup.id || sup.company_name}')" class="p-1 text-slate-500 hover:text-rose-400 transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>
           </div>
           <div class="space-y-1 text-xs text-slate-400 pt-2 border-t border-slate-800">
             <div class="flex items-center gap-2"><i data-lucide="user" class="w-3.5 h-3.5 text-slate-500"></i> ${sup.contact_person || 'N/A'}</div>
             <div class="flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5 text-slate-500"></i> ${sup.phone || 'N/A'}</div>
+            <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-500"></i> ${sup.address || 'Makati City, Metro Manila'}</div>
           </div>
         </div>
       `).join('');
@@ -1723,61 +1868,84 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     }
 
     
-    function calcPayrollPreview() {
-      const rate = parseFloat(document.getElementById('pay-rate')?.value) || 0;
-      const hours = parseFloat(document.getElementById('pay-hours')?.value) || 0;
-      const deduct = parseFloat(document.getElementById('pay-deductions')?.value) || 0;
+    function syncPayEmpName() {
+      const select = document.getElementById('pay-emp-select');
+      const input = document.getElementById('pay-emp-name');
+      if (select && input) input.value = select.value;
+    }
 
-      const gross = rate * hours;
-      const net = Math.max(0, gross - deduct);
+    function calcPayrollPreview() {
+      const gross = parseFloat(document.getElementById('pay-gross')?.value) || 0;
+      const sss = parseFloat(document.getElementById('pay-deduct-sss')?.value) || 0;
+      const pagibig = parseFloat(document.getElementById('pay-deduct-pagibig')?.value) || 0;
+      const philhealth = parseFloat(document.getElementById('pay-deduct-philhealth')?.value) || 0;
+      const tax = parseFloat(document.getElementById('pay-deduct-tax')?.value) || 0;
+
+      const totalDeduct = sss + pagibig + philhealth + tax;
+      const net = Math.max(0, gross - totalDeduct);
 
       const prevGross = document.getElementById('pay-prev-gross');
+      const prevDeduct = document.getElementById('pay-prev-deduct');
+      const prevTotalDeduct = document.getElementById('pay-prev-total-deduct');
       const prevNet = document.getElementById('pay-prev-net');
-      if (prevGross) prevGross.innerText = `₱${gross.toFixed(2)}`;
-      if (prevNet) prevNet.innerText = `₱${net.toFixed(2)}`;
+
+      if (prevGross) prevGross.innerText = `₱${gross.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+      if (prevDeduct) prevDeduct.innerText = `₱${totalDeduct.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+      if (prevTotalDeduct) prevTotalDeduct.innerText = `-₱${totalDeduct.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+      if (prevNet) prevNet.innerText = `₱${net.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
     }
 
     async function submitPayrollForm(e) {
       e.preventDefault();
-      const name = document.getElementById('pay-emp-name').value.trim();
-      const rate = parseFloat(document.getElementById('pay-rate').value) || 0;
-      const hours = parseFloat(document.getElementById('pay-hours').value) || 0;
-      const deduct = parseFloat(document.getElementById('pay-deductions').value) || 0;
+      const name = document.getElementById('pay-emp-name').value.trim() || 'Employee';
+      const month = document.getElementById('pay-month').value;
+      const year = document.getElementById('pay-year').value;
+      const period = `${month} ${year}`;
 
-      const gross = rate * hours;
-      const net = Math.max(0, gross - deduct);
+      const gross = parseFloat(document.getElementById('pay-gross').value) || 0;
+      const sss = parseFloat(document.getElementById('pay-deduct-sss').value) || 0;
+      const pagibig = parseFloat(document.getElementById('pay-deduct-pagibig').value) || 0;
+      const philhealth = parseFloat(document.getElementById('pay-deduct-philhealth').value) || 0;
+      const tax = parseFloat(document.getElementById('pay-deduct-tax').value) || 0;
+
+      const totalDeduct = sss + pagibig + philhealth + tax;
+      const net = Math.max(0, gross - totalDeduct);
 
       const newPayroll = {
         id: Date.now().toString(),
         name: name,
-        rate: rate,
-        hours: hours,
+        employee_name: name,
+        payroll_period: period,
         gross: gross,
-        deduct: deduct,
-        net: net
+        gross_salary: gross,
+        deduct: totalDeduct,
+        deductions: totalDeduct,
+        net: net,
+        net_salary: net,
+        sss, pagibig, philhealth, tax
       };
 
       if (backendMode === 'xampp') {
         const xres = await callXamppApi('save_payroll', {
           employee_name: name,
-          hourly_rate: rate,
-          worked_hours: hours,
+          hourly_rate: 0,
+          worked_hours: 0,
           gross_salary: gross,
-          deductions: deduct,
+          deductions: totalDeduct,
           net_salary: net,
-          payroll_period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          payroll_period: period
         });
         if (xres && xres.id) newPayroll.id = xres.id;
       } else if (supabaseClient) {
         try {
           const dbObj = {
             employee_name: name,
-            hourly_rate: rate,
-            worked_hours: hours,
+            hourly_rate: 0,
+            worked_hours: 0,
             gross_salary: gross,
-            deductions: deduct,
+            deductions: totalDeduct,
             net_salary: net,
-            payroll_period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+            payroll_period: period,
             status: 'Paid',
             created_at: new Date().toISOString()
           };
@@ -1792,14 +1960,10 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       }
 
       payrollState.unshift(newPayroll);
-      await logAuditEvent('Payroll', `Processed payroll for ${name} (Net: ₱${net.toFixed(2)})`);
-
-      document.getElementById('pay-emp-name').value = '';
-      document.getElementById('pay-rate').value = '';
-      document.getElementById('pay-hours').value = '';
+      await logAuditEvent('Payroll', `Processed payroll for ${name} (${period}) - Net: ₱${net.toFixed(2)}`);
 
       closeModal('modal-payroll');
-      showToast(`Payroll for ${name} processed!`, 'success');
+      showToast(`Payroll for ${name} (${period}) processed!`, 'success');
       renderPayroll();
       updateKPIStats();
     }
@@ -1808,17 +1972,53 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       const tbody = document.getElementById('payroll-table-body');
       if (!tbody) return;
 
-      tbody.innerHTML = payrollState.map(p => `
+      const filterEmp = (document.getElementById('payroll-filter-emp')?.value || '').toLowerCase();
+      const filterMonth = document.getElementById('payroll-filter-month')?.value || 'All';
+      const filterYear = document.getElementById('payroll-filter-year')?.value || 'All';
+
+      const filtered = payrollState.filter(p => {
+        const empName = (p.name || p.employee_name || '').toLowerCase();
+        const period = p.payroll_period || '';
+        const matchEmp = !filterEmp || empName.includes(filterEmp);
+        const matchMonth = filterMonth === 'All' || period.includes(filterMonth);
+        const matchYear = filterYear === 'All' || period.includes(filterYear);
+        return matchEmp && matchMonth && matchYear;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">No payroll records match the filter criteria.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(p => {
+        const grossVal = Number(p.gross || p.gross_salary || 0);
+        const deductVal = Number(p.deduct || p.deductions || 0);
+        const netVal = Number(p.net || p.net_salary || 0);
+        const periodStr = p.payroll_period || 'November 2025';
+
+        return `
         <tr class="hover:bg-slate-900/40 transition-colors">
-          <td class="p-4 font-medium text-white">${p.name || p.employee_name}</td>
-          <td class="p-4">₱${Number(p.rate || p.hourly_rate || 0).toFixed(2)}</td>
-          <td class="p-4">${p.hours || p.worked_hours || 0} hrs</td>
-          <td class="p-4 font-bold text-white">₱${Number(p.gross || p.gross_salary || 0).toFixed(2)}</td>
-          <td class="p-4 text-rose-400">-₱${Number(p.deduct || p.deductions || 0).toFixed(2)}</td>
-          <td class="p-4 font-bold text-emerald-400">₱${Number(p.net || p.net_salary || 0).toFixed(2)}</td>
+          <td class="p-4 font-medium text-white flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full bg-slate-800 text-indigo-400 flex items-center justify-center font-bold text-xs">
+              ${(p.name || p.employee_name || 'E').charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div class="font-semibold text-white">${p.name || p.employee_name}</div>
+              <div class="text-[10px] text-slate-500">Staff / Cashier</div>
+            </div>
+          </td>
+          <td class="p-4 font-mono text-slate-300">
+            <span class="px-2 py-0.5 rounded-lg bg-slate-800 border border-slate-700 text-indigo-300 font-semibold">${periodStr}</span>
+          </td>
+          <td class="p-4 font-bold text-white">₱${grossVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+          <td class="p-4">
+            <div class="font-semibold text-rose-400">-₱${deductVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+            <div class="text-[10px] text-slate-500">SSS, Pag-IBIG, PhilHealth, Tax</div>
+          </td>
+          <td class="p-4 font-bold text-emerald-400 text-sm">₱${netVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
           <td class="p-4 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Paid</span></td>
-        </tr>
-      `).join('');
+        </tr>`;
+      }).join('');
     }
 
     
@@ -1910,9 +2110,12 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       }
 
       const sub = posCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
-      const taxRate = parseFloat(document.getElementById('pos-tax-rate')?.value || 0.12);
       const isSenior = document.getElementById('senior-discount-check')?.checked;
       const discount = isSenior ? sub * 0.20 : 0;
+      // When Senior/PWD Discount is applied, Republic Act (RA 9994/RA 10754) exempts transaction from VAT (0% VAT),
+      // ensuring ₱1,000 subtotal gives exactly ₱200 discount and ₱800 total.
+      const rawTaxRate = parseFloat(document.getElementById('pos-tax-rate')?.value || 0.12);
+      const taxRate = isSenior ? 0 : rawTaxRate;
       const tax = (sub - discount) * taxRate;
       const total = (sub - discount) + tax;
 
@@ -2458,34 +2661,53 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 
     async function submitNewSupplier(e) {
       e.preventDefault();
+      const editId = document.getElementById('sup-edit-id').value;
       const company_name = document.getElementById('sup-name').value;
       const contact_person = document.getElementById('sup-contact').value;
       const phone = document.getElementById('sup-phone').value;
       const category = document.getElementById('sup-category').value;
+      const address = document.getElementById('sup-address').value;
 
-      const newObj = { company_name, contact_person, phone, category, created_at: new Date().toISOString() };
-      if (backendMode === 'xampp') {
-        const xres = await callXamppApi('save_supplier', newObj);
-        if (xres && xres.id) newObj.id = xres.id;
-        else newObj.id = Date.now().toString();
-      } else if (supabaseClient) {
-        try {
-          const { data } = await supabaseClient.from('suppliers').insert([newObj]).select();
-          if (data && data[0]) newObj.id = data[0].id;
-          else newObj.id = Date.now().toString();
-        } catch(err) { newObj.id = Date.now().toString(); }
+      if (editId) {
+        const sup = supplierState.find(s => s.id === editId || s.company_name === editId);
+        if (sup) {
+          sup.company_name = company_name;
+          sup.contact_person = contact_person;
+          sup.phone = phone;
+          sup.category = category;
+          sup.address = address;
+        }
+        if (backendMode === 'xampp') {
+          callXamppApi('save_supplier', { id: editId, company_name, contact_person, phone, category, address });
+        }
+        showToast('Supplier partner updated!', 'success');
       } else {
-        newObj.id = Date.now().toString();
+        const newObj = { company_name, contact_person, phone, category, address, created_at: new Date().toISOString() };
+        if (backendMode === 'xampp') {
+          const xres = await callXamppApi('save_supplier', newObj);
+          if (xres && xres.id) newObj.id = xres.id;
+          else newObj.id = Date.now().toString();
+        } else if (supabaseClient) {
+          try {
+            const { data } = await supabaseClient.from('suppliers').insert([newObj]).select();
+            if (data && data[0]) newObj.id = data[0].id;
+            else newObj.id = Date.now().toString();
+          } catch(err) { newObj.id = Date.now().toString(); }
+        } else {
+          newObj.id = Date.now().toString();
+        }
+
+        supplierState.unshift(newObj);
+        showToast('Supplier partner added!', 'success');
       }
 
-      supplierState.unshift(newObj);
-
+      document.getElementById('sup-edit-id').value = '';
       document.getElementById('sup-name').value = '';
       document.getElementById('sup-contact').value = '';
       document.getElementById('sup-phone').value = '';
       document.getElementById('sup-category').value = '';
+      document.getElementById('sup-address').value = '';
 
-      showToast('Supplier partner added!', 'success');
       closeModal('modal-supplier');
       renderSuppliers();
     }
