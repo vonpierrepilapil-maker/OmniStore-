@@ -453,16 +453,40 @@
 
           <!-- MODULE 2: INVENTORY MANAGEMENT -->
           <div id="module-inventory" class="module-content space-y-6 hidden">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div class="relative w-full sm:w-72">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-500"></i>
-                <input type="text" id="inventory-search" oninput="renderInventory()" placeholder="Search product name or barcode..." class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            <div class="glass-panel p-3.5 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto flex-1">
+                <div class="relative w-full sm:w-64">
+                  <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-500"></i>
+                  <input type="text" id="inventory-search" oninput="renderInventory()" placeholder="Search product name, barcode, category..." class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-slate-400 text-xs font-medium">Category:</span>
+                  <select id="inventory-filter-cat" onchange="renderInventory()" class="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                    <option value="All" selected>All Categories</option>
+                  </select>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-indigo-400"></i>
+                  <span class="text-slate-400 text-xs font-medium">Sort By:</span>
+                  <select id="inventory-sort" onchange="renderInventory()" class="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                    <option value="name-asc" selected>Name (A to Z)</option>
+                    <option value="name-desc">Name (Z to A)</option>
+                    <option value="price-asc">Price (Low to High)</option>
+                    <option value="price-desc">Price (High to Low)</option>
+                    <option value="stock-asc">Stock Level (Low to High)</option>
+                    <option value="stock-desc">Stock Level (High to Low)</option>
+                    <option value="expiry-asc">Expiry (Earliest First)</option>
+                    <option value="expiry-desc">Expiry (Latest First)</option>
+                    <option value="category-asc">Category (A-Z)</option>
+                    <option value="sku-asc">Barcode / SKU</option>
+                  </select>
+                </div>
               </div>
-              <div class="flex items-center gap-2 w-full sm:w-auto">
-                <button onclick="printInventoryReport()" class="hover-pop px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition-all">
+              <div class="flex items-center gap-2 w-full lg:w-auto">
+                <button onclick="printInventoryReport()" class="hover-pop px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition-all">
                   <i data-lucide="printer" class="w-4 h-4 text-emerald-400"></i> Print Report
                 </button>
-                <button onclick="openAddInventoryModal()" class="hover-pop w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all">
+                <button onclick="openAddInventoryModal()" class="hover-pop px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all">
                   <i data-lucide="package-plus" class="w-4 h-4"></i> Add New Product
                 </button>
               </div>
@@ -471,13 +495,38 @@
             <div class="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-300 min-w-[700px]">
-                  <thead class="bg-slate-900/80 text-slate-400 border-b border-slate-800 uppercase text-[10px] tracking-wider">
+                  <thead class="bg-slate-900/80 text-slate-400 border-b border-slate-800 uppercase text-[10px] tracking-wider select-none">
                     <tr>
-                      <th class="p-4">Barcode / Item Name</th>
-                      <th class="p-4">Category</th>
-                      <th class="p-4">Price</th>
-                      <th class="p-4">Stock Level</th>
-                      <th class="p-4">Expiration Date</th>
+                      <th class="p-4 cursor-pointer hover:text-white transition-colors" onclick="setInventorySort('name')">
+                        <div class="flex items-center gap-1.5">
+                          <span>Barcode / Item Name</span>
+                          <span id="sort-icon-name" class="text-indigo-400">▲</span>
+                        </div>
+                      </th>
+                      <th class="p-4 cursor-pointer hover:text-white transition-colors" onclick="setInventorySort('category')">
+                        <div class="flex items-center gap-1.5">
+                          <span>Category</span>
+                          <span id="sort-icon-category" class="text-slate-500">↕</span>
+                        </div>
+                      </th>
+                      <th class="p-4 cursor-pointer hover:text-white transition-colors" onclick="setInventorySort('price')">
+                        <div class="flex items-center gap-1.5">
+                          <span>Price</span>
+                          <span id="sort-icon-price" class="text-slate-500">↕</span>
+                        </div>
+                      </th>
+                      <th class="p-4 cursor-pointer hover:text-white transition-colors" onclick="setInventorySort('stock')">
+                        <div class="flex items-center gap-1.5">
+                          <span>Stock Level</span>
+                          <span id="sort-icon-stock" class="text-slate-500">↕</span>
+                        </div>
+                      </th>
+                      <th class="p-4 cursor-pointer hover:text-white transition-colors" onclick="setInventorySort('expiry')">
+                        <div class="flex items-center gap-1.5">
+                          <span>Expiration Date</span>
+                          <span id="sort-icon-expiry" class="text-slate-500">↕</span>
+                        </div>
+                      </th>
                       <th class="p-4">Status</th>
                       <th class="p-4 text-right">Actions</th>
                     </tr>
@@ -490,11 +539,38 @@
 
           <!-- MODULE 3: SUPPLIER MANAGEMENT -->
           <div id="module-supplier" class="module-content space-y-6 hidden">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <p class="text-xs text-slate-400">Maintain vendor profiles, supplier logistics, and restocking partner networks.</p>
-              <button onclick="openAddSupplierModal()" class="hover-pop w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all">
-                <i data-lucide="building-2" class="w-4 h-4"></i> Add Supplier
-              </button>
+            <!-- SUPPLIER SEARCH, STATUS FILTER & SORT BAR -->
+            <div class="glass-panel p-3.5 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+                <div class="relative w-full">
+                  <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-500"></i>
+                  <input type="text" id="supplier-search" oninput="renderSuppliers()" placeholder="Search company, contact person, or category..." class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs text-white focus:outline-none focus:border-indigo-500">
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-slate-400 text-xs font-medium">Status:</span>
+                  <select id="supplier-filter-status" onchange="renderSuppliers()" class="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                    <option value="All" selected>All Statuses</option>
+                    <option value="Active">Active Only</option>
+                    <option value="Inactive">Deactivated Only</option>
+                  </select>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-indigo-400"></i>
+                  <span class="text-slate-400 text-xs font-medium">Sort By:</span>
+                  <select id="supplier-sort" onchange="renderSuppliers()" class="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                    <option value="name-asc" selected>Company Name (A-Z)</option>
+                    <option value="name-desc">Company Name (Z-A)</option>
+                    <option value="contact-asc">Contact Person (A-Z)</option>
+                    <option value="status-asc">Status (Active First)</option>
+                    <option value="category-asc">Category</option>
+                  </select>
+                </div>
+                <button onclick="openAddSupplierModal()" class="hover-pop px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center gap-1.5 transition-all">
+                  <i data-lucide="building-2" class="w-4 h-4"></i> Add Supplier
+                </button>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="supplier-card-grid"></div>
@@ -534,9 +610,18 @@
             <!-- POS SUBVIEW 1: TERMINAL -->
             <div id="pos-terminal-view" class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-16 lg:pb-0">
               <div class="lg:col-span-2 space-y-4">
-                <div class="relative">
-                  <i data-lucide="barcode" class="w-4 h-4 absolute left-3 top-3 text-indigo-400"></i>
-                  <input type="text" id="pos-search" oninput="renderPosProducts()" placeholder="Scan/Type Barcode or Product Name (Press F1)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                <div class="flex gap-2">
+                  <div class="relative flex-1">
+                    <i data-lucide="barcode" class="w-4 h-4 absolute left-3 top-3 text-indigo-400"></i>
+                    <input type="text" id="pos-search" oninput="renderPosProducts()" placeholder="Scan/Type Barcode or Product Name (Press F1)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                  </div>
+                  <select id="pos-sort" onchange="renderPosProducts()" class="bg-slate-900 border border-slate-800 text-slate-300 text-xs rounded-xl px-2.5 py-2 focus:outline-none focus:border-indigo-500">
+                    <option value="name-asc" selected>Sort: Name A-Z</option>
+                    <option value="name-desc">Sort: Name Z-A</option>
+                    <option value="price-asc">Sort: Price Low-High</option>
+                    <option value="price-desc">Sort: Price High-Low</option>
+                    <option value="stock-asc">Sort: Stock Low First</option>
+                  </select>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3" id="pos-product-grid"></div>
@@ -639,9 +724,14 @@
                 <h3 class="text-sm font-bold text-white">Payroll & Statutory Salaries</h3>
                 <p class="text-xs text-slate-400">Compute gross pay, statutory deductions (SSS, PhilHealth, Pag-IBIG, Tax), and net payout reports.</p>
               </div>
-              <button onclick="openModal('modal-payroll')" class="hover-pop w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all">
-                <i data-lucide="calculator" class="w-4 h-4"></i> Run Payroll Period
-              </button>
+              <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button onclick="printPayrollReport()" class="hover-pop px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 flex items-center justify-center gap-2 transition-all">
+                  <i data-lucide="printer" class="w-4 h-4 text-indigo-400"></i> Print / Export Report
+                </button>
+                <button onclick="openPayrollModal()" class="hover-pop px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all">
+                  <i data-lucide="calculator" class="w-4 h-4"></i> Run Payroll Period
+                </button>
+              </div>
             </div>
 
             <!-- FILTER BAR FOR SALARY REPORTS -->
@@ -655,7 +745,7 @@
               </div>
               <div>
                 <select id="payroll-filter-month" onchange="renderPayroll()" class="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none">
-                  <option value="All">All Months</option>
+                  <option value="All" selected>All Months</option>
                   <option value="January">January</option>
                   <option value="February">February</option>
                   <option value="March">March</option>
@@ -672,9 +762,10 @@
               </div>
               <div>
                 <select id="payroll-filter-year" onchange="renderPayroll()" class="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none">
-                  <option value="All">All Years</option>
+                  <option value="All" selected>All Years</option>
+                  <option value="2027">2027</option>
                   <option value="2026">2026</option>
-                  <option value="2025" selected>2025</option>
+                  <option value="2025">2025</option>
                   <option value="2024">2024</option>
                 </select>
               </div>
@@ -690,7 +781,8 @@
                       <th class="p-4">Gross Pay</th>
                       <th class="p-4">Deductions (SSS, Pag-IBIG, PhilHealth, Tax)</th>
                       <th class="p-4">Net Pay</th>
-                      <th class="p-4 text-right">Status</th>
+                      <th class="p-4 text-center">Status</th>
+                      <th class="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="payroll-table-body" class="divide-y divide-slate-800/60"></tbody>
@@ -1115,6 +1207,13 @@
           <label class="block text-slate-400 mb-1">Business Address</label>
           <input type="text" id="sup-address" placeholder="e.g. 123 Tech Ave, Makati City" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
         </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Supplier Status</label>
+          <select id="sup-status" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200">
+            <option value="Active">Active (Available for Orders & Restock)</option>
+            <option value="Inactive">Deactivated (Suspended)</option>
+          </select>
+        </div>
         <div class="pt-2 flex justify-end gap-2">
           <button type="button" onclick="closeModal('modal-supplier')" class="px-4 py-2 bg-slate-800 rounded-xl text-slate-300">Cancel</button>
           <button type="submit" id="modal-supplier-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold">Save Supplier</button>
@@ -1244,6 +1343,8 @@ CREATE TABLE IF NOT EXISTS suppliers (
   contact_person TEXT,
   phone TEXT,
   category TEXT,
+  address TEXT DEFAULT 'Makati City, Metro Manila',
+  status TEXT DEFAULT 'Active',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -1281,6 +1382,10 @@ CREATE TABLE IF NOT EXISTS payroll (
   gross_salary NUMERIC(10,2) DEFAULT 0.00,
   deductions NUMERIC(10,2) DEFAULT 0.00,
   net_salary NUMERIC(10,2) DEFAULT 0.00,
+  sss NUMERIC(10,2) DEFAULT 0.00,
+  pagibig NUMERIC(10,2) DEFAULT 0.00,
+  philhealth NUMERIC(10,2) DEFAULT 0.00,
+  tax NUMERIC(10,2) DEFAULT 0.00,
   payroll_period TEXT,
   status TEXT DEFAULT 'Paid',
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -1419,7 +1524,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvbnVwcXNocHZueHp2eXh1bXliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMzIwODksImV4cCI6MjEwNzcwODA4OX0.z0MEDpcbZQRVCcR6TF6E3KjQaR7-v0v9uv8f2hIYrmI";
     
     let supabaseClient = null;
-    let backendMode = localStorage.getItem('omnistore_backend') || 'supabase'; // 'supabase' | 'xampp'
+    let backendMode = localStorage.getItem('omnistore_backend') || 'xampp'; // Default to xampp local database
     const XAMPP_API_URL = 'api.php';
 
     function updateBackendUI() {
@@ -1532,15 +1637,53 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     ];
 
     let supplierState = [
-      { id: '1', company_name: 'TechSupply Phils Inc.', contact_person: 'Juan Dela Cruz', phone: '09171234567', category: 'Electronics' },
-      { id: '2', company_name: 'Omni Hardware Ltd', contact_person: 'Maria Santos', phone: '09189876543', category: 'Peripherals' }
+      { id: '1', company_name: 'TechSupply Phils Inc.', contact_person: 'Juan Dela Cruz', phone: '09171234567', category: 'Electronics', address: 'Ayala Ave, Makati City', status: 'Active' },
+      { id: '2', company_name: 'Omni Hardware Ltd', contact_person: 'Maria Santos', phone: '09189876543', category: 'Peripherals', address: 'Ortigas Center, Pasig City', status: 'Active' }
     ];
 
+    function saveSuppliersToLocal() {
+      try {
+        localStorage.setItem('omnistore_suppliers_cache', JSON.stringify(supplierState));
+      } catch(e) {}
+    }
+
+    function loadSuppliersFromLocal() {
+      try {
+        const cached = localStorage.getItem('omnistore_suppliers_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            supplierState = parsed;
+          }
+        }
+      } catch(e) {}
+    }
+    loadSuppliersFromLocal();
+
     let payrollState = [
-      { id: '1', name: 'Juan Dela Cruz', employee_name: 'Juan Dela Cruz', payroll_period: 'November 2025', gross: 30000.00, gross_salary: 30000.00, deduct: 3800.00, deductions: 3800.00, net: 26200.00, net_salary: 26200.00, sss: 1200.00, pagibig: 200.00, philhealth: 400.00, tax: 2000.00 },
-      { id: '2', name: 'Cyles Todd G. Matuguina', employee_name: 'Cyles Todd G. Matuguina', payroll_period: 'November 2025', gross: 25000.00, gross_salary: 25000.00, deduct: 3100.00, deductions: 3100.00, net: 21900.00, net_salary: 21900.00 },
-      { id: '3', name: 'Errol E. Areglo', employee_name: 'Errol E. Areglo', payroll_period: 'October 2025', gross: 24000.00, gross_salary: 24000.00, deduct: 2900.00, deductions: 2900.00, net: 21100.00, net_salary: 21100.00 }
+      { id: '1', name: 'Juan Dela Cruz', employee_name: 'Juan Dela Cruz', payroll_period: 'November 2025', gross: 30000.00, gross_salary: 30000.00, deduct: 3800.00, deductions: 3800.00, net: 26200.00, net_salary: 26200.00, sss: 1200.00, pagibig: 200.00, philhealth: 400.00, tax: 2000.00, status: 'Paid' },
+      { id: '2', name: 'Cyles Todd G. Matuguina', employee_name: 'Cyles Todd G. Matuguina', payroll_period: 'November 2025', gross: 25000.00, gross_salary: 25000.00, deduct: 3100.00, deductions: 3100.00, net: 21900.00, net_salary: 21900.00, sss: 1000.00, pagibig: 200.00, philhealth: 400.00, tax: 1500.00, status: 'Paid' },
+      { id: '3', name: 'Errol E. Areglo', employee_name: 'Errol E. Areglo', payroll_period: 'October 2025', gross: 24000.00, gross_salary: 24000.00, deduct: 2900.00, deductions: 2900.00, net: 21100.00, net_salary: 21100.00, sss: 950.00, pagibig: 200.00, philhealth: 350.00, tax: 1400.00, status: 'Paid' }
     ];
+
+    function savePayrollToLocal() {
+      try {
+        localStorage.setItem('omnistore_payroll_cache', JSON.stringify(payrollState));
+      } catch(e) {}
+    }
+
+    function loadPayrollFromLocal() {
+      try {
+        const cached = localStorage.getItem('omnistore_payroll_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            payrollState = parsed;
+          }
+        }
+      } catch(e) {}
+    }
+    loadPayrollFromLocal();
 
     let auditLogsState = [
       { time: '1:57 PM', user: 'Von Pierre P. Pilapil', module: 'Auth', action: 'User logged in as Admin' },
@@ -1751,7 +1894,13 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
               stock: Number(i.stock || 0)
             }));
           }
-          if (res.data.suppliers && res.data.suppliers.length > 0) supplierState = res.data.suppliers;
+          if (res.data.suppliers && res.data.suppliers.length > 0) {
+            supplierState = res.data.suppliers.map(s => ({
+              ...s,
+              status: s.status || 'Active'
+            }));
+            saveSuppliersToLocal();
+          }
           if (res.data.transactions && res.data.transactions.length > 0) transactionsState = res.data.transactions;
           if (res.data.payroll && res.data.payroll.length > 0) {
             payrollState = res.data.payroll.map(p => ({
@@ -1767,11 +1916,13 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
               deductions: Number(p.deductions || p.deduct || 0),
               net: Number(p.net_salary || p.net || 0),
               net_salary: Number(p.net_salary || p.net || 0),
-              sss: Number(p.sss || 0),
-              pagibig: Number(p.pagibig || 0),
-              philhealth: Number(p.philhealth || 0),
-              tax: Number(p.tax || 0)
+              sss: Number(p.sss ?? 1200),
+              pagibig: Number(p.pagibig ?? 200),
+              philhealth: Number(p.philhealth ?? 400),
+              tax: Number(p.tax ?? 2000),
+              status: p.status || 'Paid'
             }));
+            savePayrollToLocal();
           }
           if (res.data.logs && res.data.logs.length > 0) {
             auditLogsState = res.data.logs.map(l => ({
@@ -1798,7 +1949,13 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         if (inv && inv.length > 0) inventoryState = inv;
 
         const { data: sup } = await supabaseClient.from('suppliers').select('*').order('created_at', { ascending: false });
-        if (sup && sup.length > 0) supplierState = sup;
+        if (sup && sup.length > 0) {
+          supplierState = sup.map(s => ({
+            ...s,
+            status: s.status || 'Active'
+          }));
+          saveSuppliersToLocal();
+        }
 
         const { data: trx } = await supabaseClient.from('transactions').select('*').order('created_at', { ascending: false });
         if (trx && trx.length > 0) transactionsState = trx;
@@ -1808,12 +1965,23 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
           payrollState = pay.map(p => ({
             id: p.id,
             name: p.employee_name || p.name,
+            employee_name: p.employee_name || p.name,
+            payroll_period: p.payroll_period || 'November 2025',
             rate: Number(p.hourly_rate || p.rate || 0),
             hours: Number(p.worked_hours || p.hours || 0),
             gross: Number(p.gross_salary || p.gross || 0),
+            gross_salary: Number(p.gross_salary || p.gross || 0),
             deduct: Number(p.deductions || p.deduct || 0),
-            net: Number(p.net_salary || p.net || 0)
+            deductions: Number(p.deductions || p.deduct || 0),
+            net: Number(p.net_salary || p.net || 0),
+            net_salary: Number(p.net_salary || p.net || 0),
+            sss: Number(p.sss ?? 1200),
+            pagibig: Number(p.pagibig ?? 200),
+            philhealth: Number(p.philhealth ?? 400),
+            tax: Number(p.tax ?? 2000),
+            status: p.status || 'Paid'
           }));
+          savePayrollToLocal();
         } else if (payErr) {
           console.info("Notice: Supabase payroll table not initialized yet. Using local state fallback.");
         }
@@ -1855,17 +2023,101 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       lucide.createIcons();
     }
 
+    let currentInventorySort = 'name-asc';
+
+    function setInventorySort(field) {
+      if (currentInventorySort.startsWith(field)) {
+        currentInventorySort = currentInventorySort.endsWith('-asc') ? `${field}-desc` : `${field}-asc`;
+      } else {
+        currentInventorySort = `${field}-asc`;
+      }
+      const select = document.getElementById('inventory-sort');
+      if (select) select.value = currentInventorySort;
+      renderInventory();
+    }
+
     function renderInventory() {
-      const q = (document.getElementById('inventory-search')?.value || '').toLowerCase();
+      const q = (document.getElementById('inventory-search')?.value || '').toLowerCase().trim();
+      const cat = document.getElementById('inventory-filter-cat')?.value || 'All';
+      const sortSelect = document.getElementById('inventory-sort');
+      if (sortSelect) currentInventorySort = sortSelect.value;
       const tbody = document.getElementById('inventory-table-body');
       if (!tbody) return;
 
-      const filtered = inventoryState.filter(item => 
-        (item.name && item.name.toLowerCase().includes(q)) || (item.sku && item.sku.toLowerCase().includes(q))
-      );
+      // Dynamically populate category dropdown if options are not yet generated
+      const catSelect = document.getElementById('inventory-filter-cat');
+      if (catSelect && catSelect.options.length <= 1) {
+        const categories = Array.from(new Set(inventoryState.map(i => i.category || 'General').filter(Boolean)));
+        categories.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          catSelect.appendChild(opt);
+        });
+      }
+
+      // Filter
+      let filtered = inventoryState.filter(item => {
+        const matchQ = !q || (item.name && item.name.toLowerCase().includes(q)) || (item.sku && item.sku.toLowerCase().includes(q)) || (item.category && item.category.toLowerCase().includes(q));
+        const matchCat = cat === 'All' || item.category === cat;
+        return matchQ && matchCat;
+      });
+
+      // Sort all items
+      filtered.sort((a, b) => {
+        switch (currentInventorySort) {
+          case 'name-asc':
+            return (a.name || '').localeCompare(b.name || '');
+          case 'name-desc':
+            return (b.name || '').localeCompare(a.name || '');
+          case 'price-asc':
+            return Number(a.price || 0) - Number(b.price || 0);
+          case 'price-desc':
+            return Number(b.price || 0) - Number(a.price || 0);
+          case 'stock-asc':
+            return Number(a.stock || 0) - Number(b.stock || 0);
+          case 'stock-desc':
+            return Number(b.stock || 0) - Number(a.stock || 0);
+          case 'expiry-asc': {
+            const dA = a.expiry_date && a.expiry_date !== 'N/A' ? new Date(a.expiry_date).getTime() : 9999999999999;
+            const dB = b.expiry_date && b.expiry_date !== 'N/A' ? new Date(b.expiry_date).getTime() : 9999999999999;
+            return dA - dB;
+          }
+          case 'expiry-desc': {
+            const dA = a.expiry_date && a.expiry_date !== 'N/A' ? new Date(a.expiry_date).getTime() : 0;
+            const dB = b.expiry_date && b.expiry_date !== 'N/A' ? new Date(b.expiry_date).getTime() : 0;
+            return dB - dA;
+          }
+          case 'category-asc':
+            return (a.category || '').localeCompare(b.category || '');
+          case 'sku-asc':
+            return (a.sku || '').localeCompare(b.sku || '');
+          default:
+            return 0;
+        }
+      });
+
+      // Update header sort indicator arrows
+      ['name', 'category', 'price', 'stock', 'expiry'].forEach(f => {
+        const icon = document.getElementById(`sort-icon-${f}`);
+        if (icon) {
+          if (currentInventorySort.startsWith(f)) {
+            icon.textContent = currentInventorySort.endsWith('-asc') ? '▲' : '▼';
+            icon.className = 'text-indigo-400 font-bold';
+          } else {
+            icon.textContent = '↕';
+            icon.className = 'text-slate-600';
+          }
+        }
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500">No products match your search or filter.</td></tr>`;
+        return;
+      }
 
       tbody.innerHTML = filtered.map(item => {
-        const isLowStock = item.stock <= (item.min_stock_alert || 10);
+        const isLowStock = Number(item.stock || 0) <= (item.min_stock_alert || 10);
         const isExpired = item.expiry_date && item.expiry_date !== 'N/A' && new Date(item.expiry_date) < new Date();
         const isExpiringSoon = item.expiry_date && item.expiry_date !== 'N/A' && !isExpired && ((new Date(item.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)) <= 30;
 
@@ -1897,11 +2149,33 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
           </td>
         </tr>`;
       }).join('');
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
     }
 
     function renderReports() {
       renderInventoryReport();
+      renderIncomeStatement();
+    }
+
+    function renderIncomeStatement() {
+      const salesFromTrx = transactionsState.reduce((sum, t) => sum + Number(t.total_amount || 0), 0);
+      const grossRevenue = (salesFromTrx > 0 ? salesFromTrx : 0) + 6194.08;
+      const payrollExpense = payrollState.reduce((sum, p) => sum + Number(p.gross || p.gross_salary || 0), 0);
+      const displayPayroll = payrollExpense > 0 ? payrollExpense : 1850.00;
+      const cogs = 2150.00;
+      const spoilage = 180.00;
+      const netProfit = grossRevenue - cogs - displayPayroll - spoilage;
+
+      const revEl = document.getElementById('rpt-revenue');
+      const payrollEl = document.getElementById('rpt-payroll');
+      const profitEl = document.getElementById('rpt-net-profit');
+
+      if (revEl) revEl.innerText = `₱${grossRevenue.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+      if (payrollEl) payrollEl.innerText = `-₱${displayPayroll.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+      if (profitEl) {
+        profitEl.innerText = `₱${netProfit.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        profitEl.className = netProfit >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
+      }
     }
 
     function renderInventoryReport() {
@@ -1927,7 +2201,19 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       if (valEl) valEl.innerText = `₱${totalValue.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
       if (alertsEl) alertsEl.innerText = `${alertItems} Alert${alertItems === 1 ? '' : 's'}`;
 
-      tbody.innerHTML = inventoryState.map(item => {
+      const sortedItems = [...inventoryState].sort((a, b) => {
+        switch (currentInventorySort) {
+          case 'name-asc': return (a.name || '').localeCompare(b.name || '');
+          case 'name-desc': return (b.name || '').localeCompare(a.name || '');
+          case 'price-asc': return Number(a.price || 0) - Number(b.price || 0);
+          case 'price-desc': return Number(b.price || 0) - Number(a.price || 0);
+          case 'stock-asc': return Number(a.stock || 0) - Number(b.stock || 0);
+          case 'stock-desc': return Number(b.stock || 0) - Number(a.stock || 0);
+          default: return 0;
+        }
+      });
+
+      tbody.innerHTML = sortedItems.map(item => {
         const stock = Number(item.stock || 0);
         const price = Number(item.price || 0);
         const cost = Number(item.cost_price || (price * 0.7));
@@ -1957,7 +2243,19 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       const totalUnits = inventoryState.reduce((sum, item) => sum + Number(item.stock || 0), 0);
       const totalValue = inventoryState.reduce((sum, item) => sum + (Number(item.stock || 0) * Number(item.price || 0)), 0);
 
-      const rowsHtml = inventoryState.map(item => `
+      const sortedItems = [...inventoryState].sort((a, b) => {
+        switch (currentInventorySort) {
+          case 'name-asc': return (a.name || '').localeCompare(b.name || '');
+          case 'name-desc': return (b.name || '').localeCompare(a.name || '');
+          case 'price-asc': return Number(a.price || 0) - Number(b.price || 0);
+          case 'price-desc': return Number(b.price || 0) - Number(a.price || 0);
+          case 'stock-asc': return Number(a.stock || 0) - Number(b.stock || 0);
+          case 'stock-desc': return Number(b.stock || 0) - Number(a.stock || 0);
+          default: return 0;
+        }
+      });
+
+      const rowsHtml = sortedItems.map(item => `
         <tr style="border-bottom: 1px solid #ddd;">
           <td style="padding: 8px; font-family: monospace;">${item.sku}</td>
           <td style="padding: 8px;">${item.name}</td>
@@ -2020,6 +2318,8 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       document.getElementById('sup-phone').value = '';
       document.getElementById('sup-category').value = '';
       document.getElementById('sup-address').value = '';
+      const statusEl = document.getElementById('sup-status');
+      if (statusEl) statusEl.value = 'Active';
       document.getElementById('modal-supplier').classList.remove('hidden');
     }
 
@@ -2034,43 +2334,141 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       document.getElementById('sup-phone').value = sup.phone || '';
       document.getElementById('sup-category').value = sup.category || '';
       document.getElementById('sup-address').value = sup.address || '';
+      const statusEl = document.getElementById('sup-status');
+      if (statusEl) statusEl.value = sup.status || 'Active';
       document.getElementById('modal-supplier').classList.remove('hidden');
+    }
+
+    async function toggleSupplierStatus(idOrName) {
+      const sup = supplierState.find(s => s.id === idOrName || s.company_name === idOrName);
+      if (!sup) return;
+
+      const newStatus = (sup.status === 'Inactive') ? 'Active' : 'Inactive';
+      sup.status = newStatus;
+      saveSuppliersToLocal();
+
+      if (backendMode === 'xampp') {
+        await callXamppApi('save_supplier', {
+          id: sup.id,
+          company_name: sup.company_name,
+          contact_person: sup.contact_person,
+          phone: sup.phone,
+          category: sup.category,
+          address: sup.address,
+          status: newStatus
+        });
+      } else if (supabaseClient) {
+        try {
+          if (sup.id && sup.id.length > 20) {
+            await supabaseClient.from('suppliers').update({ status: newStatus }).eq('id', sup.id);
+          }
+        } catch(e) { console.warn('Supabase supplier status update error:', e); }
+      }
+
+      await logAuditEvent('Suppliers', `${newStatus === 'Active' ? 'Activated' : 'Deactivated'} supplier partner ${sup.company_name}`);
+      showToast(`Supplier ${sup.company_name} is now ${newStatus === 'Active' ? 'Active' : 'Deactivated'}!`, newStatus === 'Active' ? 'success' : 'info');
+      renderSuppliers();
     }
 
     function renderSuppliers() {
       const grid = document.getElementById('supplier-card-grid');
       if (!grid) return;
 
-      grid.innerHTML = supplierState.map(sup => `
-        <div class="glass-panel p-4 rounded-2xl border border-slate-800 hover-pop space-y-3">
-          <div class="flex justify-between items-start">
+      const q = (document.getElementById('supplier-search')?.value || '').toLowerCase().trim();
+      const statusFilter = document.getElementById('supplier-filter-status')?.value || 'All';
+      const sortVal = document.getElementById('supplier-sort')?.value || 'name-asc';
+
+      let filtered = supplierState.filter(sup => {
+        const name = (sup.company_name || '').toLowerCase();
+        const contact = (sup.contact_person || '').toLowerCase();
+        const cat = (sup.category || '').toLowerCase();
+        const matchQ = !q || name.includes(q) || contact.includes(q) || cat.includes(q);
+        const matchStatus = statusFilter === 'All' || (sup.status || 'Active') === statusFilter;
+        return matchQ && matchStatus;
+      });
+
+      filtered.sort((a, b) => {
+        switch (sortVal) {
+          case 'name-asc':
+            return (a.company_name || '').localeCompare(b.company_name || '');
+          case 'name-desc':
+            return (b.company_name || '').localeCompare(a.company_name || '');
+          case 'contact-asc':
+            return (a.contact_person || '').localeCompare(b.contact_person || '');
+          case 'status-asc':
+            return (a.status || 'Active').localeCompare(b.status || 'Active');
+          case 'category-asc':
+            return (a.category || '').localeCompare(b.category || '');
+          default:
+            return 0;
+        }
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full p-8 text-center text-slate-500 glass-panel rounded-2xl border border-slate-800">No suppliers found matching your filter criteria.</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(sup => {
+        const isInactive = sup.status === 'Inactive';
+        return `
+        <div class="glass-panel p-4 rounded-2xl border ${isInactive ? 'border-rose-900/40 bg-slate-900/40 opacity-80' : 'border-slate-800 hover-pop'} space-y-3 transition-all">
+          <div class="flex justify-between items-start gap-2">
             <div>
-              <h4 class="font-bold text-white text-sm">${sup.company_name}</h4>
-              <p class="text-[10px] text-indigo-400 uppercase tracking-wider">${sup.category || 'Vendor'}</p>
+              <div class="flex items-center gap-2">
+                <h4 class="font-bold text-white text-sm ${isInactive ? 'line-through text-slate-400' : ''}">${sup.company_name}</h4>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                  isInactive ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                }">${isInactive ? 'Deactivated' : 'Active'}</span>
+              </div>
+              <p class="text-[10px] text-indigo-400 uppercase tracking-wider mt-0.5">${sup.category || 'Vendor'}</p>
             </div>
             <div class="flex items-center gap-1">
-              <button onclick="editSupplier('${sup.id || sup.company_name}')" class="p-1 text-slate-500 hover:text-indigo-400 transition-colors"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
-              <button onclick="deleteSupplier('${sup.id || sup.company_name}')" class="p-1 text-slate-500 hover:text-rose-400 transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+              <button onclick="toggleSupplierStatus('${sup.id || sup.company_name}')" title="${isInactive ? 'Click to Activate Supplier' : 'Click to Deactivate Supplier'}" class="px-2 py-1 rounded-lg text-[10px] font-semibold border flex items-center gap-1 transition-all ${
+                isInactive ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30'
+              }">
+                <i data-lucide="${isInactive ? 'check-circle' : 'slash'}" class="w-3 h-3"></i>
+                <span>${isInactive ? 'Activate' : 'Deactivate'}</span>
+              </button>
+              <button onclick="editSupplier('${sup.id || sup.company_name}')" class="p-1 text-slate-500 hover:text-indigo-400 transition-colors" title="Edit Supplier"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+              <button onclick="deleteSupplier('${sup.id || sup.company_name}')" class="p-1 text-slate-500 hover:text-rose-400 transition-colors" title="Delete Supplier"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
             </div>
           </div>
-          <div class="space-y-1 text-xs text-slate-400 pt-2 border-t border-slate-800">
+          <div class="space-y-1 text-xs text-slate-400 pt-2 border-t border-slate-800/80">
             <div class="flex items-center gap-2"><i data-lucide="user" class="w-3.5 h-3.5 text-slate-500"></i> ${sup.contact_person || 'N/A'}</div>
             <div class="flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5 text-slate-500"></i> ${sup.phone || 'N/A'}</div>
             <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-500"></i> ${sup.address || 'Makati City, Metro Manila'}</div>
           </div>
-        </div>
-      `).join('');
-      lucide.createIcons();
+        </div>`;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
     }
 
     function renderPosProducts() {
-      const q = (document.getElementById('pos-search')?.value || '').toLowerCase();
+      const q = (document.getElementById('pos-search')?.value || '').toLowerCase().trim();
+      const sortVal = document.getElementById('pos-sort')?.value || 'name-asc';
       const grid = document.getElementById('pos-product-grid');
       if (!grid) return;
 
-      const filtered = inventoryState.filter(item => 
-        (item.name && item.name.toLowerCase().includes(q)) || (item.sku && item.sku.toLowerCase().includes(q))
+      let filtered = inventoryState.filter(item => 
+        (item.name && item.name.toLowerCase().includes(q)) || (item.sku && item.sku.toLowerCase().includes(q)) || (item.category && item.category.toLowerCase().includes(q))
       );
+
+      filtered.sort((a, b) => {
+        switch (sortVal) {
+          case 'name-asc': return (a.name || '').localeCompare(b.name || '');
+          case 'name-desc': return (b.name || '').localeCompare(a.name || '');
+          case 'price-asc': return Number(a.price || 0) - Number(b.price || 0);
+          case 'price-desc': return Number(b.price || 0) - Number(a.price || 0);
+          case 'stock-asc': return Number(a.stock || 0) - Number(b.stock || 0);
+          default: return 0;
+        }
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full p-8 text-center text-slate-500 glass-panel rounded-2xl border border-slate-800">No products match '${q}'</div>`;
+        return;
+      }
 
       grid.innerHTML = filtered.map(item => `
         <div onclick="addToCart('${item.sku}')" class="interactive glass-panel p-3.5 rounded-2xl border border-slate-800 hover:border-indigo-500/50 cursor-pointer hover-pop space-y-2">
@@ -2085,6 +2483,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
           </div>
         </div>
       `).join('');
+      if (window.lucide) lucide.createIcons();
     }
 
     
@@ -2092,6 +2491,45 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       const select = document.getElementById('pay-emp-select');
       const input = document.getElementById('pay-emp-name');
       if (select && input) input.value = select.value;
+    }
+
+    function openPayrollModal() {
+      // Dynamic employee selection from accounts
+      const empSelect = document.getElementById('pay-emp-select');
+      const empInput = document.getElementById('pay-emp-name');
+      if (empSelect) {
+        const names = ['Juan Dela Cruz'];
+        accountsState.forEach(acc => {
+          if (acc.name && !names.includes(acc.name)) names.push(acc.name);
+        });
+        empSelect.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
+        empSelect.value = 'Juan Dela Cruz';
+      }
+      if (empInput) empInput.value = 'Juan Dela Cruz';
+
+      // Checklist Item 16 & 17 sample standard values
+      const monthEl = document.getElementById('pay-month');
+      if (monthEl) monthEl.value = 'November';
+      const yearEl = document.getElementById('pay-year');
+      if (yearEl) yearEl.value = '2025';
+
+      const grossEl = document.getElementById('pay-gross');
+      if (grossEl) grossEl.value = '30000.00';
+
+      const sssEl = document.getElementById('pay-deduct-sss');
+      if (sssEl) sssEl.value = '1200.00';
+
+      const pagibigEl = document.getElementById('pay-deduct-pagibig');
+      if (pagibigEl) pagibigEl.value = '200.00';
+
+      const philEl = document.getElementById('pay-deduct-philhealth');
+      if (philEl) philEl.value = '400.00';
+
+      const taxEl = document.getElementById('pay-deduct-tax');
+      if (taxEl) taxEl.value = '2000.00';
+
+      calcPayrollPreview();
+      openModal('modal-payroll');
     }
 
     function calcPayrollPreview() {
@@ -2142,7 +2580,8 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         deductions: totalDeduct,
         net: net,
         net_salary: net,
-        sss, pagibig, philhealth, tax
+        sss, pagibig, philhealth, tax,
+        status: 'Paid'
       };
 
       if (backendMode === 'xampp') {
@@ -2184,19 +2623,49 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       }
 
       payrollState.unshift(newPayroll);
+      savePayrollToLocal();
       await logAuditEvent('Payroll', `Processed payroll for ${name} (${period}) - Net: ₱${net.toFixed(2)}`);
+
+      // Reset filters so the new entry shows up immediately
+      const filterMonthEl = document.getElementById('payroll-filter-month');
+      const filterYearEl = document.getElementById('payroll-filter-year');
+      const filterEmpEl = document.getElementById('payroll-filter-emp');
+      if (filterEmpEl) filterEmpEl.value = '';
+      if (filterMonthEl) filterMonthEl.value = 'All';
+      if (filterYearEl) filterYearEl.value = 'All';
 
       closeModal('modal-payroll');
       showToast(`Payroll for ${name} (${period}) processed!`, 'success');
       renderPayroll();
+      renderReports();
       updateKPIStats();
     }
 
-    function renderPayroll() {
-      const tbody = document.getElementById('payroll-table-body');
-      if (!tbody) return;
+    async function deletePayroll(id) {
+      if (!confirm('Are you sure you want to delete this payroll record?')) return;
+      const index = payrollState.findIndex(p => String(p.id) === String(id));
+      if (index === -1) return;
 
-      const filterEmp = (document.getElementById('payroll-filter-emp')?.value || '').toLowerCase();
+      const removed = payrollState.splice(index, 1)[0];
+      savePayrollToLocal();
+
+      if (backendMode === 'xampp') {
+        await callXamppApi('delete_payroll', { id: id });
+      } else if (supabaseClient) {
+        try {
+          await supabaseClient.from('payroll').delete().eq('id', id);
+        } catch(e) { console.warn('Supabase delete error:', e); }
+      }
+
+      await logAuditEvent('Payroll', `Deleted payroll record for ${removed.name || removed.employee_name || 'Staff'}`);
+      showToast('Payroll record deleted', 'info');
+      renderPayroll();
+      renderReports();
+      updateKPIStats();
+    }
+
+    function printPayrollReport() {
+      const filterEmp = (document.getElementById('payroll-filter-emp')?.value || '').toLowerCase().trim();
       const filterMonth = document.getElementById('payroll-filter-month')?.value || 'All';
       const filterYear = document.getElementById('payroll-filter-year')?.value || 'All';
 
@@ -2204,13 +2673,102 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         const empName = (p.name || p.employee_name || '').toLowerCase();
         const period = p.payroll_period || '';
         const matchEmp = !filterEmp || empName.includes(filterEmp);
-        const matchMonth = filterMonth === 'All' || period.includes(filterMonth);
+        const matchMonth = filterMonth === 'All' || period.toLowerCase().includes(filterMonth.toLowerCase());
+        const matchYear = filterYear === 'All' || period.includes(filterYear);
+        return matchEmp && matchMonth && matchYear;
+      });
+
+      const totalGross = filtered.reduce((s, p) => s + Number(p.gross || p.gross_salary || 0), 0);
+      const totalDeduct = filtered.reduce((s, p) => s + Number(p.deduct || p.deductions || 0), 0);
+      const totalNet = filtered.reduce((s, p) => s + Number(p.net || p.net_salary || 0), 0);
+
+      const rows = filtered.map(p => {
+        const grossVal = Number(p.gross || p.gross_salary || 0);
+        const deductVal = Number(p.deduct || p.deductions || 0);
+        const netVal = Number(p.net || p.net_salary || 0);
+        const sssVal = Number(p.sss ?? 1200);
+        const pagibigVal = Number(p.pagibig ?? 200);
+        const philVal = Number(p.philhealth ?? 400);
+        const taxVal = Number(p.tax ?? 2000);
+
+        return `
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 10px 8px;"><strong>${p.name || p.employee_name}</strong></td>
+          <td style="padding: 10px 8px;">${p.payroll_period || 'November 2025'}</td>
+          <td style="padding: 10px 8px; text-align: right;">₱${grossVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+          <td style="padding: 10px 8px; text-align: right; color: #dc2626;">-₱${deductVal.toLocaleString('en-US', {minimumFractionDigits: 2})}<br>
+            <span style="font-size: 10px; color: #64748b;">(SSS: ₱${sssVal.toFixed(2)}, Pag-IBIG: ₱${pagibigVal.toFixed(2)}, PhilHealth: ₱${philVal.toFixed(2)}, Tax: ₱${taxVal.toFixed(2)})</span>
+          </td>
+          <td style="padding: 10px 8px; text-align: right; font-weight: bold; color: #059669;">₱${netVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+          <td style="padding: 10px 8px; text-align: center;"><span style="background: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">Paid</span></td>
+        </tr>`;
+      }).join('');
+
+      const printWin = window.open('', '_blank', 'width=900,height=700');
+      printWin.document.write(`
+        <html>
+        <head>
+          <title>OmniStore Salary & Payroll Report</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 25px; color: #1e293b; }
+            h2 { margin: 0 0 4px 0; color: #0f172a; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+            th { background: #f1f5f9; padding: 10px 8px; text-align: left; border-bottom: 2px solid #cbd5e1; font-size: 11px; text-transform: uppercase; color: #475569; }
+            .summary-box { margin-top: 20px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; justify-content: space-between; font-size: 13px; }
+          </style>
+        </head>
+        <body>
+          <h2>OmniStore Enterprise Management System</h2>
+          <p style="font-size: 12px; color: #64748b; margin-top: 0;">Employee Salary & Statutory Deductions Report — Filter: Month [${filterMonth}], Year [${filterYear}]</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Payroll Period</th>
+                <th style="text-align: right;">Gross Pay</th>
+                <th style="text-align: right;">Deductions Breakdown</th>
+                <th style="text-align: right;">Net Payout</th>
+                <th style="text-align: center;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #94a3b8;">No payroll records found for this filter.</td></tr>'}
+            </tbody>
+          </table>
+          <div class="summary-box">
+            <div><strong>Total Records:</strong> ${filtered.length} employees</div>
+            <div><strong>Total Gross:</strong> ₱${totalGross.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+            <div><strong>Total Deductions:</strong> -₱${totalDeduct.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+            <div><strong>Total Net Disbursed:</strong> ₱${totalNet.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWin.document.close();
+    }
+
+    function renderPayroll() {
+      const tbody = document.getElementById('payroll-table-body');
+      if (!tbody) return;
+
+      const filterEmp = (document.getElementById('payroll-filter-emp')?.value || '').toLowerCase().trim();
+      const filterMonth = document.getElementById('payroll-filter-month')?.value || 'All';
+      const filterYear = document.getElementById('payroll-filter-year')?.value || 'All';
+
+      const filtered = payrollState.filter(p => {
+        const empName = (p.name || p.employee_name || '').toLowerCase();
+        const period = p.payroll_period || '';
+        const matchEmp = !filterEmp || empName.includes(filterEmp);
+        const matchMonth = filterMonth === 'All' || period.toLowerCase().includes(filterMonth.toLowerCase());
         const matchYear = filterYear === 'All' || period.includes(filterYear);
         return matchEmp && matchMonth && matchYear;
       });
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">No payroll records match the filter criteria.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500">No payroll records match the filter criteria.</td></tr>`;
         return;
       }
 
@@ -2220,29 +2778,48 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         const netVal = Number(p.net || p.net_salary || 0);
         const periodStr = p.payroll_period || 'November 2025';
 
+        const sssVal = Number(p.sss ?? 1200);
+        const pagibigVal = Number(p.pagibig ?? 200);
+        const philVal = Number(p.philhealth ?? 400);
+        const taxVal = Number(p.tax ?? 2000);
+
         return `
         <tr class="hover:bg-slate-900/40 transition-colors">
-          <td class="p-4 font-medium text-white flex items-center gap-2">
-            <div class="w-7 h-7 rounded-full bg-slate-800 text-indigo-400 flex items-center justify-center font-bold text-xs">
+          <td class="p-4 font-medium text-white flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-xs">
               ${(p.name || p.employee_name || 'E').charAt(0).toUpperCase()}
             </div>
             <div>
               <div class="font-semibold text-white">${p.name || p.employee_name}</div>
-              <div class="text-[10px] text-slate-500">Staff / Cashier</div>
+              <div class="text-[10px] text-slate-500">Employee / Cashier</div>
             </div>
           </td>
           <td class="p-4 font-mono text-slate-300">
-            <span class="px-2 py-0.5 rounded-lg bg-slate-800 border border-slate-700 text-indigo-300 font-semibold">${periodStr}</span>
+            <span class="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-indigo-300 font-semibold text-xs">${periodStr}</span>
           </td>
-          <td class="p-4 font-bold text-white">₱${grossVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+          <td class="p-4 font-bold text-white text-xs">₱${grossVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
           <td class="p-4">
-            <div class="font-semibold text-rose-400">-₱${deductVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
-            <div class="text-[10px] text-slate-500">SSS, Pag-IBIG, PhilHealth, Tax</div>
+            <div class="font-semibold text-rose-400 text-xs">-₱${deductVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+            <div class="text-[10px] text-slate-400 flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5 font-mono">
+              <span>SSS: ₱${sssVal.toFixed(2)}</span>
+              <span>Pag-IBIG: ₱${pagibigVal.toFixed(2)}</span>
+              <span>PhilHealth: ₱${philVal.toFixed(2)}</span>
+              <span>Tax: ₱${taxVal.toFixed(2)}</span>
+            </div>
           </td>
           <td class="p-4 font-bold text-emerald-400 text-sm">₱${netVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-          <td class="p-4 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Paid</span></td>
+          <td class="p-4 text-center">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Paid</span>
+          </td>
+          <td class="p-4 text-right">
+            <button onclick="deletePayroll('${p.id}')" title="Delete payroll record" class="p-1 hover:text-rose-400 text-slate-500 transition-colors">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </td>
         </tr>`;
       }).join('');
+
+      if (window.lucide) lucide.createIcons();
     }
 
     
@@ -2711,14 +3288,23 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     }
 
     function openRestockModal(id) {
-      const item = inventoryState.find(i => i.id === id);
+      const item = inventoryState.find(i => i.id === id || i.sku === id);
       if (!item) return;
 
       document.getElementById('restock-prod-id').value = item.id;
       document.getElementById('restock-prod-name').value = item.name;
       
       const supSelect = document.getElementById('restock-supplier');
-      supSelect.innerHTML = supplierState.map(s => `<option value="${s.company_name}">${s.company_name}</option>`).join('');
+      const sortedSups = [...supplierState].sort((a, b) => {
+        if (a.status === 'Active' && b.status === 'Inactive') return -1;
+        if (a.status === 'Inactive' && b.status === 'Active') return 1;
+        return (a.company_name || '').localeCompare(b.company_name || '');
+      });
+
+      supSelect.innerHTML = sortedSups.map(s => {
+        const isInactive = s.status === 'Inactive';
+        return `<option value="${s.company_name}">${s.company_name} ${isInactive ? '(Deactivated)' : '(Active)'}</option>`;
+      }).join('');
       
       document.getElementById('modal-restock').classList.remove('hidden');
     }
@@ -2891,6 +3477,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       const phone = document.getElementById('sup-phone').value;
       const category = document.getElementById('sup-category').value;
       const address = document.getElementById('sup-address').value;
+      const status = document.getElementById('sup-status')?.value || 'Active';
 
       if (editId) {
         const sup = supplierState.find(s => s.id === editId || s.company_name === editId);
@@ -2900,13 +3487,19 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
           sup.phone = phone;
           sup.category = category;
           sup.address = address;
+          sup.status = status;
         }
         if (backendMode === 'xampp') {
-          callXamppApi('save_supplier', { id: editId, company_name, contact_person, phone, category, address });
+          callXamppApi('save_supplier', { id: editId, company_name, contact_person, phone, category, address, status });
+        } else if (supabaseClient) {
+          try {
+            await supabaseClient.from('suppliers').update({ company_name, contact_person, phone, category, address, status }).eq('id', editId);
+          } catch(e) {}
         }
+        saveSuppliersToLocal();
         showToast('Supplier partner updated!', 'success');
       } else {
-        const newObj = { company_name, contact_person, phone, category, address, created_at: new Date().toISOString() };
+        const newObj = { company_name, contact_person, phone, category, address, status, created_at: new Date().toISOString() };
         if (backendMode === 'xampp') {
           const xres = await callXamppApi('save_supplier', newObj);
           if (xres && xres.id) newObj.id = xres.id;
@@ -2922,6 +3515,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         }
 
         supplierState.unshift(newObj);
+        saveSuppliersToLocal();
         showToast('Supplier partner added!', 'success');
       }
 
@@ -2996,6 +3590,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         }
       }
       supplierState = supplierState.filter(s => s.company_name !== companyOrId && s.id !== companyOrId);
+      saveSuppliersToLocal();
       showToast('Supplier removed', 'success');
       renderSuppliers();
     }
