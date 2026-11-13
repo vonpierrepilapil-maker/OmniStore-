@@ -458,9 +458,14 @@
                 <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-500"></i>
                 <input type="text" id="inventory-search" oninput="renderInventory()" placeholder="Search product name or barcode..." class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
               </div>
-              <button onclick="openAddInventoryModal()" class="hover-pop w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all">
-                <i data-lucide="package-plus" class="w-4 h-4"></i> Add New Product
-              </button>
+              <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button onclick="printInventoryReport()" class="hover-pop px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition-all">
+                  <i data-lucide="printer" class="w-4 h-4 text-emerald-400"></i> Print Report
+                </button>
+                <button onclick="openAddInventoryModal()" class="hover-pop w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all">
+                  <i data-lucide="package-plus" class="w-4 h-4"></i> Add New Product
+                </button>
+              </div>
             </div>
 
             <div class="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
@@ -735,6 +740,60 @@
                   </div>
                 </div>
               </div>
+            </div>
+
+            <!-- INVENTORY STOCK & VALUATION SUMMARY REPORT -->
+            <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-4">
+              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3">
+                <div>
+                  <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                    <i data-lucide="boxes" class="w-4 h-4 text-indigo-400"></i> Inventory Valuation & Stock Report
+                  </h3>
+                  <p class="text-[11px] text-slate-400">Summary of stock quantities, total inventory valuation, and stock alerts.</p>
+                </div>
+                <button onclick="printInventoryReport()" class="hover-pop px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all">
+                  <i data-lucide="printer" class="w-3.5 h-3.5"></i> Export / Print Inventory Report
+                </button>
+              </div>
+
+              <!-- KPI CARDS FOR INVENTORY REPORT -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                  <p class="text-slate-500 text-[10px] uppercase font-bold">Total SKUs</p>
+                  <p id="rpt-inv-total-skus" class="text-base font-extrabold text-white mt-1">3 Products</p>
+                </div>
+                <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                  <p class="text-slate-500 text-[10px] uppercase font-bold">Total Units In Stock</p>
+                  <p id="rpt-inv-total-units" class="text-base font-extrabold text-indigo-400 mt-1">61 Units</p>
+                </div>
+                <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                  <p class="text-slate-500 text-[10px] uppercase font-bold">Total Inventory Value</p>
+                  <p id="rpt-inv-total-value" class="text-base font-extrabold text-emerald-400 mt-1">₱138,638.00</p>
+                </div>
+                <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                  <p class="text-slate-500 text-[10px] uppercase font-bold">Low Stock / Expiry Alerts</p>
+                  <p id="rpt-inv-alerts" class="text-base font-extrabold text-amber-400 mt-1">1 Item</p>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto rounded-xl border border-slate-800/80">
+                <table class="w-full text-left text-xs text-slate-300 min-w-[650px]">
+                  <thead class="bg-slate-900/90 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                    <tr>
+                      <th class="p-3">SKU / Barcode</th>
+                      <th class="p-3">Product Name</th>
+                      <th class="p-3">Category</th>
+                      <th class="p-3">Unit Price</th>
+                      <th class="p-3">Cost Price</th>
+                      <th class="p-3">Stock Units</th>
+                      <th class="p-3">Total Asset Value</th>
+                      <th class="p-3 text-right">Stock Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inventory-report-table-body" class="divide-y divide-slate-800/50"></tbody>
+                </table>
+              </div>
+            </div>
             </div>
           </div>
 
@@ -1620,6 +1679,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       if (tab === 'supplier') renderSuppliers();
       if (tab === 'pos') { renderPosProducts(); renderCart(); renderPosHistory(); }
       if (tab === 'payroll') renderPayroll();
+      if (tab === 'reports') renderReports();
       if (tab === 'logs') renderLogs();
       updateKPIStats();
     }
@@ -1630,6 +1690,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       if (activeTab === 'supplier') renderSuppliers();
       if (activeTab === 'pos') { renderPosProducts(); renderCart(); renderPosHistory(); }
       if (activeTab === 'payroll') renderPayroll();
+      if (activeTab === 'reports') renderReports();
       if (activeTab === 'logs') renderLogs();
     }
 
@@ -1661,7 +1722,11 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
               deduct: Number(p.deductions || p.deduct || 0),
               deductions: Number(p.deductions || p.deduct || 0),
               net: Number(p.net_salary || p.net || 0),
-              net_salary: Number(p.net_salary || p.net || 0)
+              net_salary: Number(p.net_salary || p.net || 0),
+              sss: Number(p.sss || 0),
+              pagibig: Number(p.pagibig || 0),
+              philhealth: Number(p.philhealth || 0),
+              tax: Number(p.tax || 0)
             }));
           }
           if (res.data.logs && res.data.logs.length > 0) {
@@ -1789,6 +1854,117 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         </tr>`;
       }).join('');
       lucide.createIcons();
+    }
+
+    function renderReports() {
+      renderInventoryReport();
+    }
+
+    function renderInventoryReport() {
+      const tbody = document.getElementById('inventory-report-table-body');
+      if (!tbody) return;
+
+      const totalSkus = inventoryState.length;
+      const totalUnits = inventoryState.reduce((sum, item) => sum + Number(item.stock || 0), 0);
+      const totalValue = inventoryState.reduce((sum, item) => sum + (Number(item.stock || 0) * Number(item.price || 0)), 0);
+      const alertItems = inventoryState.filter(item => {
+        const isLow = Number(item.stock || 0) <= (item.min_stock_alert || 10);
+        const isExpired = item.expiry_date && item.expiry_date !== 'N/A' && new Date(item.expiry_date) < new Date();
+        return isLow || isExpired;
+      }).length;
+
+      const skusEl = document.getElementById('rpt-inv-total-skus');
+      const unitsEl = document.getElementById('rpt-inv-total-units');
+      const valEl = document.getElementById('rpt-inv-total-value');
+      const alertsEl = document.getElementById('rpt-inv-alerts');
+
+      if (skusEl) skusEl.innerText = `${totalSkus} Products`;
+      if (unitsEl) unitsEl.innerText = `${totalUnits} Units`;
+      if (valEl) valEl.innerText = `₱${totalValue.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+      if (alertsEl) alertsEl.innerText = `${alertItems} Alert${alertItems === 1 ? '' : 's'}`;
+
+      tbody.innerHTML = inventoryState.map(item => {
+        const stock = Number(item.stock || 0);
+        const price = Number(item.price || 0);
+        const cost = Number(item.cost_price || (price * 0.7));
+        const assetValue = stock * price;
+        const isLow = stock <= (item.min_stock_alert || 10);
+        const isExpired = item.expiry_date && item.expiry_date !== 'N/A' && new Date(item.expiry_date) < new Date();
+
+        return `
+        <tr class="hover:bg-slate-900/40 transition-colors">
+          <td class="p-3 font-mono text-indigo-400 font-bold">${item.sku}</td>
+          <td class="p-3 font-medium text-white">${item.name}</td>
+          <td class="p-3 text-slate-400">${item.category || 'General'}</td>
+          <td class="p-3 text-white">₱${price.toFixed(2)}</td>
+          <td class="p-3 text-slate-400">₱${cost.toFixed(2)}</td>
+          <td class="p-3 font-mono font-bold ${isLow ? 'text-amber-400' : 'text-slate-200'}">${stock}</td>
+          <td class="p-3 font-bold text-emerald-400">₱${assetValue.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+          <td class="p-3 text-right">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${isExpired ? 'bg-rose-500/20 text-rose-400' : (isLow ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400')}">
+              ${isExpired ? 'Expired' : (isLow ? 'Low Stock' : 'Good Stock')}
+            </span>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function printInventoryReport() {
+      const totalUnits = inventoryState.reduce((sum, item) => sum + Number(item.stock || 0), 0);
+      const totalValue = inventoryState.reduce((sum, item) => sum + (Number(item.stock || 0) * Number(item.price || 0)), 0);
+
+      const rowsHtml = inventoryState.map(item => `
+        <tr style="border-bottom: 1px solid #ddd;">
+          <td style="padding: 8px; font-family: monospace;">${item.sku}</td>
+          <td style="padding: 8px;">${item.name}</td>
+          <td style="padding: 8px;">${item.category || 'General'}</td>
+          <td style="padding: 8px; text-align: right;">₱${Number(item.price).toFixed(2)}</td>
+          <td style="padding: 8px; text-align: right;">${item.stock}</td>
+          <td style="padding: 8px; text-align: right;">₱${(Number(item.stock) * Number(item.price)).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      const printWin = window.open('', '_blank', 'width=800,height=600');
+      printWin.document.write(`
+        <html>
+        <head>
+          <title>OmniStore Inventory Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
+            h2 { margin-bottom: 4px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+            th { background: #f3f4f6; padding: 8px; text-align: left; border-bottom: 2px solid #ccc; }
+            .summary { margin-top: 15px; font-weight: bold; font-size: 13px; }
+          </style>
+        </head>
+        <body>
+          <h2>OmniStore Enterprise Management System</h2>
+          <p style="font-size: 12px; color: #666; margin-top: 0;">Inventory Valuation & Stock Report — Generated on: ${new Date().toLocaleString()}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Barcode / SKU</th>
+                <th>Product Name</th>
+                <th>Category</th>
+                <th style="text-align: right;">Price</th>
+                <th style="text-align: right;">Stock</th>
+                <th style="text-align: right;">Total Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <div class="summary">
+            <p>Total SKUs: ${inventoryState.length} | Total Stock: ${totalUnits} units | Total Asset Valuation: ₱${totalValue.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWin.document.close();
     }
 
     function openAddSupplierModal() {
@@ -1933,6 +2109,10 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
           gross_salary: gross,
           deductions: totalDeduct,
           net_salary: net,
+          sss: sss,
+          pagibig: pagibig,
+          philhealth: philhealth,
+          tax: tax,
           payroll_period: period
         });
         if (xres && xres.id) newPayroll.id = xres.id;
@@ -2539,7 +2719,6 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       updateKPIStats();
     }
 
-    function openAddSupplierModal() { document.getElementById('modal-supplier').classList.remove('hidden'); }
     function toggleSqlModal() { document.getElementById('modal-sql').classList.toggle('hidden'); }
     
     function openModal(id) {
