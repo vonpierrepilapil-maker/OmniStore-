@@ -1506,6 +1506,25 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       { id: '4', name: 'Von Pierre P. Pilapil', email: 'von@omnistore.io', role: 'Admin', status: 'Active', created_at: '2026-10-23T05:54:00.000Z' }
     ];
 
+    function saveAccountsToLocal() {
+      try {
+        localStorage.setItem('omnistore_accounts_cache', JSON.stringify(accountsState));
+      } catch(e) {}
+    }
+
+    function loadAccountsFromLocal() {
+      try {
+        const cached = localStorage.getItem('omnistore_accounts_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            accountsState = parsed;
+          }
+        }
+      } catch(e) {}
+    }
+    loadAccountsFromLocal();
+
     let inventoryState = [
       { id: '1', sku: '4800101', name: 'Wireless Ergonomic Mouse', category: 'Peripherals', price: 650.00, stock: 45, expiry_date: '2027-12-31' },
       { id: '2', sku: '4800102', name: 'Mechanical Gaming Keyboard', category: 'Peripherals', price: 1850.00, stock: 4, expiry_date: '2028-06-30' },
@@ -1720,7 +1739,10 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       if (backendMode === 'xampp') {
         const res = await callXamppApi('fetch_all');
         if (res && res.success && res.data) {
-          if (res.data.accounts && res.data.accounts.length > 0) accountsState = res.data.accounts;
+          if (res.data.accounts && res.data.accounts.length > 0) {
+            accountsState = res.data.accounts;
+            saveAccountsToLocal();
+          }
           if (res.data.inventory && res.data.inventory.length > 0) {
             inventoryState = res.data.inventory.map(i => ({
               ...i,
@@ -2799,6 +2821,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       }
 
       closeModal('modal-account');
+      saveAccountsToLocal();
       renderAccounts();
       updateKPIStats();
     }
@@ -2929,6 +2952,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         }
       }
       accountsState = accountsState.filter(a => a.email !== emailOrId && a.id !== emailOrId);
+      saveAccountsToLocal();
       showToast('Account removed', 'success');
       renderAccounts();
       updateKPIStats();
