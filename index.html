@@ -246,11 +246,14 @@
           </div>
 
           <div class="flex items-center justify-between text-xs text-slate-400">
-            <span class="inline-flex items-center gap-1.5 text-emerald-400">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Supabase Backend Active
+            <span id="backend-status-badge" class="inline-flex items-center gap-1.5 text-emerald-400">
+              <span id="backend-status-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span id="backend-status-text">Supabase Active</span>
             </span>
-            <a href="#" onclick="showToast('Reset password link generated', 'info'); return false;" class="hover:text-indigo-400 transition-colors">Forgot key?</a>
+            <button type="button" onclick="toggleBackendMode()" id="backend-toggle-btn-login" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-white border border-slate-700 font-medium transition-all flex items-center gap-1 text-[11px]">
+              <i data-lucide="server" class="w-3 h-3"></i>
+              <span>Switch to XAMPP</span>
+            </button>
           </div>
 
           <button type="submit" class="hover-pop w-full py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-medium rounded-xl text-xs shadow-lg shadow-indigo-600/30 hover:brightness-110 transition-all">
@@ -360,6 +363,11 @@
             </h2>
           </div>
           <div class="flex items-center gap-2.5">
+            <button onclick="toggleBackendMode()" id="backend-toggle-btn-dash" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium border border-slate-700 transition-all flex items-center gap-1.5 text-indigo-300">
+              <span id="dash-backend-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span id="dash-backend-label">Supabase</span>
+              <span class="text-[10px] text-slate-400 hidden sm:inline">(Click to switch)</span>
+            </button>
             <span id="active-role-badge" class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
               Admin
             </span>
@@ -1253,6 +1261,72 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvbnVwcXNocHZueHp2eXh1bXliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMzIwODksImV4cCI6MjEwNzcwODA4OX0.z0MEDpcbZQRVCcR6TF6E3KjQaR7-v0v9uv8f2hIYrmI";
     
     let supabaseClient = null;
+    let backendMode = localStorage.getItem('omnistore_backend') || 'supabase'; // 'supabase' | 'xampp'
+    const XAMPP_API_URL = 'api.php';
+
+    function updateBackendUI() {
+      const isXampp = backendMode === 'xampp';
+      const labelText = isXampp ? 'XAMPP Local Active' : 'Supabase Active';
+      const dotColor = isXampp ? 'bg-amber-400' : 'bg-emerald-400';
+      const textColor = isXampp ? 'text-amber-400' : 'text-emerald-400';
+
+      const loginDot = document.getElementById('backend-status-dot');
+      const loginText = document.getElementById('backend-status-text');
+      const loginBtn = document.getElementById('backend-toggle-btn-login');
+      if (loginDot) loginDot.className = `w-2 h-2 rounded-full ${dotColor} animate-pulse`;
+      if (loginText) {
+        loginText.innerText = labelText;
+        loginText.parentElement.className = `inline-flex items-center gap-1.5 ${textColor}`;
+      }
+      if (loginBtn) {
+        loginBtn.innerHTML = `<i data-lucide="server" class="w-3 h-3"></i><span>${isXampp ? 'Switch to Supabase' : 'Switch to XAMPP'}</span>`;
+      }
+
+      const dashDot = document.getElementById('dash-backend-dot');
+      const dashLabel = document.getElementById('dash-backend-label');
+      const dashBtn = document.getElementById('backend-toggle-btn-dash');
+      if (dashDot) dashDot.className = `w-2 h-2 rounded-full ${dotColor}`;
+      if (dashLabel) dashLabel.innerText = isXampp ? 'XAMPP (Local MySQL)' : 'Supabase';
+      if (dashBtn) {
+        dashBtn.title = isXampp ? 'Using local XAMPP MySQL. Click to switch to Supabase.' : 'Using cloud Supabase. Click to switch to XAMPP MySQL.';
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function toggleBackendMode() {
+      backendMode = backendMode === 'xampp' ? 'supabase' : 'xampp';
+      localStorage.setItem('omnistore_backend', backendMode);
+      updateBackendUI();
+
+      if (backendMode === 'xampp') {
+        showToast('Switched to XAMPP MySQL backend', 'info');
+        await loadBackendData();
+      } else {
+        showToast('Switched to Supabase Cloud backend', 'info');
+        await loadBackendData();
+      }
+      renderActiveTab();
+      updateKPIStats();
+    }
+
+    async function callXamppApi(action, data = null) {
+      try {
+        const url = `${XAMPP_API_URL}?action=${action}`;
+        const options = {
+          method: data ? 'POST' : 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        };
+        if (data) options.body = JSON.stringify(data);
+        const res = await fetch(url, options);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        console.warn('XAMPP API error:', err);
+        return { success: false, error: err.message };
+      }
+    }
+
     try {
       if (window.supabase) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1343,9 +1417,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       e.preventDefault();
       const inputEmail = document.getElementById('login-email').value.trim();
       
-      if (supabaseClient) {
-        await fetchSupabaseData();
-      }
+      await loadBackendData();
 
       const matchedUser = accountsState.find(a => 
         a.email.toLowerCase() === inputEmail.toLowerCase() || 
@@ -1451,6 +1523,55 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       if (tab === 'payroll') renderPayroll();
       if (tab === 'logs') renderLogs();
       updateKPIStats();
+    }
+
+    function renderActiveTab() {
+      if (activeTab === 'account') renderAccounts();
+      if (activeTab === 'inventory') renderInventory();
+      if (activeTab === 'supplier') renderSuppliers();
+      if (activeTab === 'pos') { renderPosProducts(); renderCart(); renderPosHistory(); }
+      if (activeTab === 'payroll') renderPayroll();
+      if (activeTab === 'logs') renderLogs();
+    }
+
+    async function loadBackendData() {
+      if (backendMode === 'xampp') {
+        const res = await callXamppApi('fetch_all');
+        if (res && res.success && res.data) {
+          if (res.data.accounts && res.data.accounts.length > 0) accountsState = res.data.accounts;
+          if (res.data.inventory && res.data.inventory.length > 0) {
+            inventoryState = res.data.inventory.map(i => ({
+              ...i,
+              price: Number(i.price || 0),
+              cost_price: Number(i.cost_price || 0),
+              stock: Number(i.stock || 0)
+            }));
+          }
+          if (res.data.suppliers && res.data.suppliers.length > 0) supplierState = res.data.suppliers;
+          if (res.data.transactions && res.data.transactions.length > 0) transactionsState = res.data.transactions;
+          if (res.data.payroll && res.data.payroll.length > 0) {
+            payrollState = res.data.payroll.map(p => ({
+              id: p.id,
+              name: p.employee_name || p.name,
+              rate: Number(p.hourly_rate || p.rate || 0),
+              hours: Number(p.worked_hours || p.hours || 0),
+              gross: Number(p.gross_salary || p.gross || 0),
+              deduct: Number(p.deductions || p.deduct || 0),
+              net: Number(p.net_salary || p.net || 0)
+            }));
+          }
+          if (res.data.logs && res.data.logs.length > 0) {
+            auditLogsState = res.data.logs.map(l => ({
+              time: l.time_stamp ? new Date(l.time_stamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Now',
+              user: l.user_name || 'System',
+              module: l.module || 'System',
+              action: l.action_details || ''
+            }));
+          }
+        }
+      } else {
+        await fetchSupabaseData();
+      }
     }
 
     async function fetchSupabaseData() {
@@ -1636,7 +1757,18 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         net: net
       };
 
-      if (supabaseClient) {
+      if (backendMode === 'xampp') {
+        const xres = await callXamppApi('save_payroll', {
+          employee_name: name,
+          hourly_rate: rate,
+          worked_hours: hours,
+          gross_salary: gross,
+          deductions: deduct,
+          net_salary: net,
+          payroll_period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        });
+        if (xres && xres.id) newPayroll.id = xres.id;
+      } else if (supabaseClient) {
         try {
           const dbObj = {
             employee_name: name,
@@ -1698,7 +1830,13 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       auditLogsState.unshift(logEntry);
       renderLogs();
 
-      if (supabaseClient) {
+      if (backendMode === 'xampp') {
+        callXamppApi('save_log', {
+          user_name: userName,
+          module: moduleName,
+          action_details: actionDetails
+        });
+      } else if (supabaseClient) {
         try {
           const { error: logErr } = await supabaseClient.from('system_logs').insert([{
             user_name: userName,
@@ -1921,7 +2059,9 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         const invItem = inventoryState.find(i => i.sku === cartItem.sku);
         if (invItem) {
           invItem.stock = Math.max(0, invItem.stock - cartItem.qty);
-          if (supabaseClient) {
+          if (backendMode === 'xampp') {
+            callXamppApi('update_stock', { sku: invItem.sku, stock: invItem.stock });
+          } else if (supabaseClient) {
             try {
               await supabaseClient.from('inventory').update({ stock: invItem.stock }).eq('sku', invItem.sku);
             } catch(e) { console.warn("Stock update notice:", e); }
@@ -1940,8 +2080,17 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         created_at: new Date().toISOString()
       };
 
-      
-      if (supabaseClient) {
+      if (backendMode === 'xampp') {
+        const xres = await callXamppApi('save_transaction', {
+          ref_number: newTrx.ref_number,
+          payment_method: newTrx.payment_method,
+          items_summary: newTrx.items_summary,
+          total_amount: parseFloat(newTrx.total_amount),
+          items_count: newTrx.items_count,
+          processed_by: newTrx.processed_by
+        });
+        if (xres && xres.id) newTrx.id = xres.id;
+      } else if (supabaseClient) {
         try {
           const trxObj = {
             ref_number: newTrx.ref_number,
@@ -2157,7 +2306,9 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       if (item) {
         item.stock += qty;
 
-        if (supabaseClient) {
+        if (backendMode === 'xampp') {
+          callXamppApi('update_stock', { sku: item.sku, stock: item.stock });
+        } else if (supabaseClient) {
           try {
             if (item.id && item.id.length > 20) {
               await supabaseClient.from('inventory').update({ stock: item.stock }).eq('id', item.id);
@@ -2216,7 +2367,9 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
           acc.role = role;
           acc.status = status;
         }
-        if (supabaseClient) {
+        if (backendMode === 'xampp') {
+          callXamppApi('save_account', { id: editId, name, email, password, role, status });
+        } else if (supabaseClient) {
           try {
             await supabaseClient.from('accounts').update({ name, email, role, status }).eq('id', editId);
           } catch(err) { console.warn("Supabase account update error:", err); }
@@ -2224,7 +2377,11 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         showToast('Account details updated', 'success');
       } else {
         const newObj = { name, email, password, role, status, created_at: new Date().toISOString() };
-        if (supabaseClient) {
+        if (backendMode === 'xampp') {
+          const xres = await callXamppApi('save_account', newObj);
+          if (xres && xres.id) newObj.id = xres.id;
+          else newObj.id = Date.now().toString();
+        } else if (supabaseClient) {
           try {
             const { data } = await supabaseClient.from('accounts').insert([newObj]).select();
             if (data && data[0]) newObj.id = data[0].id;
@@ -2262,7 +2419,9 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
           item.category = category;
           item.expiry_date = expiry_date;
         }
-        if (supabaseClient) {
+        if (backendMode === 'xampp') {
+          callXamppApi('save_inventory', { id: editId, sku, name, category, price, stock, expiry_date });
+        } else if (supabaseClient) {
           try {
             if (editId && editId.length > 20) {
               await supabaseClient.from('inventory').update({ name, sku, price, stock, category, expiry_date }).eq('id', editId);
@@ -2274,7 +2433,11 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
         showToast('Product details updated!', 'success');
       } else {
         const newObj = { sku, name, price, stock, category, expiry_date, created_at: new Date().toISOString() };
-        if (supabaseClient) {
+        if (backendMode === 'xampp') {
+          const xres = await callXamppApi('save_inventory', newObj);
+          if (xres && xres.id) newObj.id = xres.id;
+          else newObj.id = Date.now().toString();
+        } else if (supabaseClient) {
           try {
             const { data } = await supabaseClient.from('inventory').insert([newObj]).select();
             if (data && data[0]) newObj.id = data[0].id;
@@ -2301,7 +2464,11 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       const category = document.getElementById('sup-category').value;
 
       const newObj = { company_name, contact_person, phone, category, created_at: new Date().toISOString() };
-      if (supabaseClient) {
+      if (backendMode === 'xampp') {
+        const xres = await callXamppApi('save_supplier', newObj);
+        if (xres && xres.id) newObj.id = xres.id;
+        else newObj.id = Date.now().toString();
+      } else if (supabaseClient) {
         try {
           const { data } = await supabaseClient.from('suppliers').insert([newObj]).select();
           if (data && data[0]) newObj.id = data[0].id;
@@ -2325,14 +2492,18 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 
     async function deleteAccount(emailOrId) {
       const acc = accountsState.find(a => a.email === emailOrId || a.id === emailOrId);
-      if (acc && supabaseClient) {
-        try {
-          if (acc.id && acc.id.length > 20) {
-            await supabaseClient.from('accounts').delete().eq('id', acc.id);
-          } else {
-            await supabaseClient.from('accounts').delete().eq('email', acc.email);
-          }
-        } catch(err) { console.warn("Supabase account delete error:", err); }
+      if (acc) {
+        if (backendMode === 'xampp') {
+          callXamppApi('delete_account', { id: acc.id, email: acc.email });
+        } else if (supabaseClient) {
+          try {
+            if (acc.id && acc.id.length > 20) {
+              await supabaseClient.from('accounts').delete().eq('id', acc.id);
+            } else {
+              await supabaseClient.from('accounts').delete().eq('email', acc.email);
+            }
+          } catch(err) { console.warn("Supabase account delete error:", err); }
+        }
       }
       accountsState = accountsState.filter(a => a.email !== emailOrId && a.id !== emailOrId);
       showToast('Account removed', 'success');
@@ -2342,14 +2513,18 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 
     async function deleteInventory(skuOrId) {
       const item = inventoryState.find(i => i.sku === skuOrId || i.id === skuOrId);
-      if (item && supabaseClient) {
-        try {
-          if (item.id && item.id.length > 20) {
-            await supabaseClient.from('inventory').delete().eq('id', item.id);
-          } else {
-            await supabaseClient.from('inventory').delete().eq('sku', item.sku);
-          }
-        } catch(err) { console.warn("Supabase delete error:", err); }
+      if (item) {
+        if (backendMode === 'xampp') {
+          callXamppApi('delete_inventory', { id: item.id, sku: item.sku });
+        } else if (supabaseClient) {
+          try {
+            if (item.id && item.id.length > 20) {
+              await supabaseClient.from('inventory').delete().eq('id', item.id);
+            } else {
+              await supabaseClient.from('inventory').delete().eq('sku', item.sku);
+            }
+          } catch(err) { console.warn("Supabase delete error:", err); }
+        }
       }
       inventoryState = inventoryState.filter(i => i.sku !== skuOrId && i.id !== skuOrId);
       showToast('Item deleted from inventory', 'success');
@@ -2360,14 +2535,18 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 
     async function deleteSupplier(companyOrId) {
       const sup = supplierState.find(s => s.company_name === companyOrId || s.id === companyOrId);
-      if (sup && supabaseClient) {
-        try {
-          if (sup.id && sup.id.length > 20) {
-            await supabaseClient.from('suppliers').delete().eq('id', sup.id);
-          } else {
-            await supabaseClient.from('suppliers').delete().eq('company_name', sup.company_name);
-          }
-        } catch(err) { console.warn("Supabase supplier delete error:", err); }
+      if (sup) {
+        if (backendMode === 'xampp') {
+          callXamppApi('delete_supplier', { id: sup.id || sup.company_name });
+        } else if (supabaseClient) {
+          try {
+            if (sup.id && sup.id.length > 20) {
+              await supabaseClient.from('suppliers').delete().eq('id', sup.id);
+            } else {
+              await supabaseClient.from('suppliers').delete().eq('company_name', sup.company_name);
+            }
+          } catch(err) { console.warn("Supabase supplier delete error:", err); }
+        }
       }
       supplierState = supplierState.filter(s => s.company_name !== companyOrId && s.id !== companyOrId);
       showToast('Supplier removed', 'success');
@@ -2459,9 +2638,11 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
       }
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
+      updateBackendUI();
       lucide.createIcons();
-      fetchSupabaseData();
+      await loadBackendData();
+      renderActiveTab();
       updateKPIStats();
     });
   </script>
